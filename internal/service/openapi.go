@@ -2,15 +2,31 @@ package service
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"fmt"
+	"io"
 	"net/http"
+	"net/url"
+	"os"
 )
 
 type OpenAPI struct {
 	Openapi    string              `json:"openapi"`
+	Servers    []Server            `json:"servers,omitempty"`
 	Info       Info                `json:"info"`
 	Paths      map[string]PathItem `json:"paths"`
 	Components Components          `json:"components"`
+}
+
+type Server struct {
+	URL         string                    `json:"url"`
+	Description string                    `json:"description,omitempty"`
+	Variables   map[string]ServerVariable `json:"variables,omitempty"`
+}
+
+type ServerVariable struct {
+	Enum        []string `json:"enum,omitempty"`
+	Default     string   `json:"default"`
+	Description string   `json:"description,omitempty"`
 }
 
 type Info struct {
@@ -77,16 +93,10 @@ type XAEPResource struct {
 	Patterns []string `json:"patterns,omitempty"`
 }
 
-func FetchOpenAPI(url string) (*OpenAPI, error) {
-	resp, err := http.Get(url)
+func FetchOpenAPI(pathOrURL string) (*OpenAPI, error) {
+	body, err := readFileOrURL(pathOrURL)
 	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unable to read file or URL: %w", err)
 	}
 
 	var api OpenAPI
@@ -95,4 +105,22 @@ func FetchOpenAPI(url string) (*OpenAPI, error) {
 	}
 
 	return &api, nil
+}
+
+func readFileOrURL(pathOrURL string) ([]byte, error) {
+	if isURL(pathOrURL) {
+		resp, err := http.Get(pathOrURL)
+		if err != nil {
+			return nil, err
+		}
+		defer resp.Body.Close()
+		return io.ReadAll(resp.Body)
+	}
+
+	return os.ReadFile(pathOrURL)
+}
+
+func isURL(str string) bool {
+	u, err := url.Parse(str)
+	return err == nil && (u.Scheme == "http" || u.Scheme == "https")
 }

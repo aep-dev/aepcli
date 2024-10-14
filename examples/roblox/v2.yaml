@@ -1,0 +1,72 @@
+# normally this would be suffixed with the domain (.com)
+# name: "cloud.roblox.com"
+#url: "https://apis.roblox.com/cloud/v2"
+#resources:
+# - kind: "User"
+#   plural: "users"
+#   properties:
+#     displayName:
+#       type: STRING
+#       number: 2
+#       required: true
+#   methods:
+#     read: {}
+
+# normally this would be suffixed with the domain (.com)
+name: "bookstore.example.com"
+url: "http://localhost:8081"
+resources:
+  - kind: "Book"
+    plural: "books"
+    properties:
+      isbn:
+        array_type:
+          type: STRING
+        number: 1
+        required: true
+      price:
+        type: FLOAT
+        number: 2
+        required: true
+      published:
+        type: BOOLEAN
+        number: 3
+        required: true
+      edition:
+        type: INT32
+        number: 4
+        required: false
+      author:
+        array_type:
+          object_type:
+            properties:
+              firstName:
+                type: STRING
+                number: 1
+              lastName:
+                type: STRING
+                number: 2
+    # parents:
+    #   - "bookstore.example.com/Publisher"
+    methods:
+      create: {}
+      read: {}
+      update: {}
+      delete: {}
+      list: {}
+      apply: {} # do not uncomment until there is an AEP on apply.
+#   - kind: "Publisher"
+#     plural: "publishers"
+#     methods:
+#       read: {}
+#       list: {}
+#   - kind: "Author"
+#     plural: "authors"
+#     properties:
+#       name:
+#         type: STRING
+#         number: 1
+#     parents:
+#       - "Publisher"
+#     methods:
+#       read: {}

@@ -10,6 +10,7 @@ type Resource struct {
 }
 
 type ServiceDefinition struct {
+	ServerURL string
 	Resources map[string]Resource
 }
 
@@ -20,7 +21,19 @@ func GetServiceDefinition(api *OpenAPI) (*ServiceDefinition, error) {
 			resources[strings.ToLower(r.XAEPResource.Plural)] = Resource{Plural: r.XAEPResource.Plural}
 		}
 	}
-	return &ServiceDefinition{Resources: resources}, nil
+	// get the first serverURL url
+	serverURL := ""
+	for _, s := range api.Servers {
+		serverURL = s.URL
+	}
+	if serverURL == "" {
+		return nil, fmt.Errorf("no servers found in the OpenAPI definition. Cannot find a server to send a request to.")
+	}
+
+	return &ServiceDefinition{
+		ServerURL: serverURL,
+		Resources: resources,
+	}, nil
 }
 
 func (s *ServiceDefinition) GetResource(resource string) (*Resource, error) {
