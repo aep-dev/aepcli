@@ -1,4 +1,4 @@
-package service
+package openapi
 
 import (
 	"encoding/json"
@@ -91,6 +91,7 @@ type XAEPResource struct {
 	Singular string   `json:"singular,omitempty"`
 	Plural   string   `json:"plural,omitempty"`
 	Patterns []string `json:"patterns,omitempty"`
+	Parents  []string `json:"parents,omitempty`
 }
 
 func FetchOpenAPI(pathOrURL string) (*OpenAPI, error) {

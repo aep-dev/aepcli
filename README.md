@@ -20,19 +20,30 @@ aepcli --openapi-file=https://bookstore.example.com/openapi.json
 ### List resources
 
 ```bash
-aepcli --openapi-file=https://bookstore.example.com/openapi.json books list
+aepcli --openapi-file=https://bookstore.example.com/openapi.json publishers list
 ```
 
 ### Get a resource
 
 ```bash
-aepcli --openapi-file=https://bookstore.example.com/openapi.json books get peter-pan
+aepcli --openapi-file=https://bookstore.example.com/openapi.json publishers get peter-pan
+```
+
+### Subresources
+
+Sometimes, a resource is a child of another resource (e.g. a book is listed under a publiher).
+
+aepcli has support for this as well:
+
+```
+aepcli "https://bookstore.example.com/openapi.json" books --publisher="orderly-home" get peter-pan
+aepcli "https://bookstore.example.com/openapi.json" publisher orderly-home books get peter-pan
 ```
 
 ## Real-life demo: the Roblox API
 
 Although the Roblox [Open Cloud v2
-API](https://create.roblox.com/docs/ja-jp/cloud/reference) is not officially AEP
+API](https://create.roblox.com/docs/cloud/reference) is not officially AEP
 compliant, it adheres to many of the same practices, and serves as a practical
 example of using aepcli.
 
@@ -40,3 +51,4 @@ example of using aepcli.
 export ROBLOX_API_KEY=YOUR_KEY_HERE
 aepcli --openapi-file=./examples/roblox_openapi.json --header "x-api-key: ${ROBLOX_API_KEY}" users get 123
 ```
+

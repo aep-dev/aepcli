@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 )
 
 type Service struct {
@@ -22,11 +23,32 @@ func NewService(serviceDefinition ServiceDefinition, headers map[string]string) 
 	}
 }
 
+func (s *Service) ExecuteCommand(resource string, args []string) (string, error) {
+	r, err := s.GetResource(resource)
+	if err != nil {
+		return "", err
+	}
+	req, err := r.ExecuteCommand(args)
+	if err != nil {
+		return "", fmt.Errorf("unable to execute command: %v", err)
+	}
+	if req == nil {
+		return "", nil
+	}
+	url, err := url.Parse(fmt.Sprintf("%s/%s", s.ServerURL, req.URL.String()))
+	if err != nil {
+		return "", fmt.Errorf("unable to create url: %v", err)
+	}
+	req.URL = url
+	return s.doRequest(req)
+}
+
 func (s *Service) doRequest(r *http.Request) (string, error) {
 	r.Header.Set("Content-Type", "application/json")
 	for k, v := range s.Headers {
 		r.Header.Set(k, v)
 	}
+	fmt.Printf("Request: %s %s\n", r.Method, r.URL.String())
 	resp, err := s.Client.Do(r)
 	if err != nil {
 		return "", err
@@ -43,56 +65,4 @@ func (s *Service) doRequest(r *http.Request) (string, error) {
 		return "", fmt.Errorf("failed to format JSON: %w", err)
 	}
 	return prettyJSON.String(), nil
-}
-
-func (s *Service) ListResource(resource string) (string, error) {
-	r, err := s.ServiceDefinition.GetResource(resource)
-	if err != nil {
-		return "", err
-	}
-	url := fmt.Sprintf("%s/%s", s.ServerURL, r.Plural)
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return "", fmt.Errorf("unable to create request: %w", err)
-	}
-	return s.doRequest(req)
-}
-
-func (s *Service) GetResource(resource, id string) (string, error) {
-	r, err := s.ServiceDefinition.GetResource(resource)
-	if err != nil {
-		return "", err
-	}
-	url := fmt.Sprintf("%s/%s/%s", s.ServerURL, r.Plural, id)
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return "", fmt.Errorf("unable to create request: %w", err)
-	}
-	return s.doRequest(req)
-}
-
-func (s *Service) CreateResource(resource, id string) (string, error) {
-	r, err := s.ServiceDefinition.GetResource(resource)
-	if err != nil {
-		return "", err
-	}
-	url := fmt.Sprintf("%s/%s?id=%s", s.ServerURL, r.Plural, id)
-	req, err := http.NewRequest("POST", url, nil)
-	if err != nil {
-		return "", fmt.Errorf("unable to create request: %w", err)
-	}
-	return s.doRequest(req)
-}
-
-func (s *Service) DeleteResource(resource, id string) (string, error) {
-	r, err := s.ServiceDefinition.GetResource(resource)
-	if err != nil {
-		return "", err
-	}
-	url := fmt.Sprintf("%s/%s/%s", s.ServerURL, r.Plural, id)
-	req, err := http.NewRequest("DELETE", url, nil)
-	if err != nil {
-		return "", fmt.Errorf("unable to create request: %w", err)
-	}
-	return s.doRequest(req)
 }

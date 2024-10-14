@@ -3,22 +3,20 @@ package service
 import (
 	"fmt"
 	"strings"
-)
 
-type Resource struct {
-	Plural string
-}
+	"github.com/aep-dev/aepcli/internal/openapi"
+)
 
 type ServiceDefinition struct {
 	ServerURL string
 	Resources map[string]Resource
 }
 
-func GetServiceDefinition(api *OpenAPI) (*ServiceDefinition, error) {
+func GetServiceDefinition(api *openapi.OpenAPI) (*ServiceDefinition, error) {
 	resources := make(map[string]Resource)
 	for _, r := range api.Components.Schemas {
 		if r.XAEPResource != nil {
-			resources[strings.ToLower(r.XAEPResource.Plural)] = Resource{Plural: r.XAEPResource.Plural}
+			addResourceToMap(r.XAEPResource, resources, api)
 		}
 	}
 	// get the first serverURL url
@@ -42,4 +40,33 @@ func (s *ServiceDefinition) GetResource(resource string) (*Resource, error) {
 		return nil, fmt.Errorf("Resource %s not found. Resources available: %q", resource, (*s).Resources)
 	}
 	return &r, nil
+}
+
+func addResourceToMap(r *openapi.XAEPResource, resourceMap map[string]Resource, api *openapi.OpenAPI) (*Resource, error) {
+	plural := strings.ToLower(r.Plural)
+	if r, ok := resourceMap[plural]; ok {
+		return &r, nil
+	}
+	parents := []*Resource{}
+	for _, p := range r.Parents {
+		s, ok := api.Components.Schemas[p]
+		if !ok {
+			return nil, fmt.Errorf("Resource %q parent %q not found", r.Singular, p)
+		}
+		if s.XAEPResource == nil {
+			return nil, fmt.Errorf("Resource %q parent %q does not have the x-aep-resource annotation", r.Singular, p)
+		}
+		parentResource, err := addResourceToMap(s.XAEPResource, resourceMap, api)
+		if err != nil {
+			return nil, fmt.Errorf("Resource %q parent %q does not have the x-aep-resource annotation", r.Singular, p)
+		}
+		parents = append(parents, parentResource)
+	}
+	resource := Resource{
+		Singular: r.Singular,
+		Plural:   r.Plural,
+		Parent:   parents,
+	}
+	resourceMap[strings.ToLower(r.Plural)] = resource
+	return &resource, nil
 }
