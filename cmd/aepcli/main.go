@@ -3,8 +3,10 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
+	"github.com/aep-dev/aepcli/internal/config"
 	"github.com/aep-dev/aepcli/internal/openapi"
 	"github.com/aep-dev/aepcli/internal/service"
 
@@ -12,7 +14,7 @@ import (
 )
 
 func main() {
-	var openapiFile string
+	var fileOrAlias string
 	var resource string
 	var additionalArgs []string
 	var s *service.Service
@@ -21,15 +23,15 @@ func main() {
 		Use:  "aepcli",
 		Args: cobra.ArbitraryArgs,
 		Run: func(cmd *cobra.Command, args []string) {
-			resource = args[0]
-			additionalArgs = args[1:]
+			fileOrAlias = args[0]
+			resource = args[1]
+			additionalArgs = args[2:]
 		},
 	}
 
 	var rawHeaders []string
 	rootCmd.Flags().SetInterspersed(false) // allow sub parsers to parse subsequent flags after the resource
 	rootCmd.PersistentFlags().StringArrayVar(&rawHeaders, "header", []string{}, "Specify headers in the format key=value")
-	rootCmd.PersistentFlags().StringVar(&openapiFile, "openapi-file", "", "Specify the path to the openapi file to configure aepcli. Can be a local file path, or a URL")
 	rootCmd.MarkPersistentFlagRequired("host")
 
 	if err := rootCmd.Execute(); err != nil {
@@ -37,7 +39,23 @@ func main() {
 		os.Exit(1)
 	}
 
-	openapi, err := openapi.FetchOpenAPI(openapiFile)
+	c, err := config.ReadConfig()
+	if err != nil {
+		fmt.Println(fmt.Errorf("unable to read config: %v", err))
+		os.Exit(1)
+	}
+
+	if api, ok := c.APIs[fileOrAlias]; ok {
+		cd, err := config.ConfigDir()
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		fileOrAlias = filepath.Join(cd, api.OpenAPIPath)
+		rawHeaders = append(rawHeaders, api.Headers...)
+	}
+
+	openapi, err := openapi.FetchOpenAPI(fileOrAlias)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)

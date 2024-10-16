@@ -1,0 +1,327 @@
+{
+  "swagger": "2.0",
+  "servers": [
+    {
+      "url": "https://apis.roblox.com/cloud/v2"
+    }
+  ],
+  "info": {
+    "title": "cloud.roblox.com",
+    "version": "version not set"
+  },
+  "schemes": [
+    "http"
+  ],
+  "paths": {
+    "/creator-store-products": {
+      "post": {
+        "responses": {
+          "200": {
+            "schema": {
+              "$ref": "#/components/schemas/CreatorStoreProduct"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "$ref": "#/components/schemas/CreatorStoreProduct"
+            }
+          },
+          {
+            "in": "query",
+            "name": "id",
+            "schema": {},
+            "required": true,
+            "type": "string"
+          }
+        ]
+      }
+    },
+    "/creator-store-products/{creatorstoreproduct_id}": {
+      "get": {
+        "responses": {
+          "200": {
+            "schema": {
+              "$ref": "#/components/schemas/CreatorStoreProduct"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "creatorstoreproduct_id",
+            "schema": {},
+            "required": true,
+            "type": "string"
+          }
+        ]
+      },
+      "patch": {
+        "responses": {
+          "200": {
+            "schema": {
+              "$ref": "#/components/schemas/CreatorStoreProduct"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "creatorstoreproduct_id",
+            "schema": {},
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "$ref": "#/components/schemas/CreatorStoreProduct"
+            }
+          }
+        ]
+      }
+    },
+    "/universes": {
+      "post": {
+        "responses": {
+          "200": {
+            "schema": {
+              "$ref": "#/components/schemas/Universe"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "$ref": "#/components/schemas/Universe"
+            }
+          },
+          {
+            "in": "query",
+            "name": "id",
+            "schema": {},
+            "required": true,
+            "type": "string"
+          }
+        ]
+      }
+    },
+    "/universes/{universe_id}": {
+      "get": {
+        "responses": {
+          "200": {
+            "schema": {
+              "$ref": "#/components/schemas/Universe"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "universe_id",
+            "schema": {},
+            "required": true,
+            "type": "string"
+          }
+        ]
+      },
+      "patch": {
+        "responses": {
+          "200": {
+            "schema": {
+              "$ref": "#/components/schemas/Universe"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "universe_id",
+            "schema": {},
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "$ref": "#/components/schemas/Universe"
+            }
+          }
+        ]
+      }
+    },
+    "/universes/{universe_id}/data-stores": {
+      "get": {
+        "responses": {
+          "200": {
+            "schema": {
+              "items": {
+                "$ref": "#/components/schemas/DataStore"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "universe_id",
+            "schema": {},
+            "required": true,
+            "type": "string"
+          }
+        ]
+      }
+    },
+    "/universes/{universe_id}/data-stores/{datastore_id}": {
+      "get": {
+        "responses": {
+          "200": {
+            "schema": {
+              "$ref": "#/components/schemas/DataStore"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "universe_id",
+            "schema": {},
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "path",
+            "name": "datastore_id",
+            "schema": {},
+            "required": true,
+            "type": "string"
+          }
+        ]
+      }
+    },
+    "/users/{user_id}": {
+      "get": {
+        "responses": {
+          "200": {
+            "schema": {
+              "$ref": "#/components/schemas/User"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "schema": {},
+            "required": true,
+            "type": "string"
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CreatorStoreProduct": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "readOnly": true,
+            "x-terraform-id": true
+          },
+          "path": {
+            "type": "string",
+            "readOnly": true
+          }
+        },
+        "x-aep-resource": {
+          "singular": "CreatorStoreProduct",
+          "plural": "creator-store-products",
+          "patterns": [
+            "/creator-store-products/{creatorstoreproduct_id}"
+          ]
+        }
+      },
+      "DataStore": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "readOnly": true,
+            "x-terraform-id": true
+          },
+          "path": {
+            "type": "string",
+            "readOnly": true
+          }
+        },
+        "x-aep-resource": {
+          "singular": "DataStore",
+          "plural": "data-stores",
+          "patterns": [
+            "/universes/{universe_id}/data-stores/{datastore_id}"
+          ],
+          "parents": [
+            "Universe"
+          ]
+        }
+      },
+      "Universe": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "readOnly": true,
+            "x-terraform-id": true
+          },
+          "path": {
+            "type": "string",
+            "readOnly": true
+          }
+        },
+        "x-aep-resource": {
+          "singular": "Universe",
+          "plural": "universes",
+          "patterns": [
+            "/universes/{universe_id}"
+          ]
+        }
+      },
+      "User": {
+        "type": "object",
+        "required": [
+          "displayName"
+        ],
+        "properties": {
+          "displayName": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string",
+            "readOnly": true,
+            "x-terraform-id": true
+          },
+          "path": {
+            "type": "string",
+            "readOnly": true
+          }
+        },
+        "x-aep-resource": {
+          "singular": "User",
+          "plural": "users",
+          "patterns": [
+            "/users/{user_id}"
+          ]
+        }
+      }
+    }
+  }
+}
