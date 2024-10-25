@@ -18,7 +18,7 @@
         "responses": {
           "200": {
             "schema": {
-              "$ref": "#/components/schemas/CreatorStoreProduct"
+              "$ref": "#/components/schemas/creator-store-product"
             }
           }
         },
@@ -27,7 +27,7 @@
             "in": "body",
             "name": "body",
             "schema": {
-              "$ref": "#/components/schemas/CreatorStoreProduct"
+              "$ref": "#/components/schemas/creator-store-product"
             }
           },
           {
@@ -40,19 +40,19 @@
         ]
       }
     },
-    "/creator-store-products/{creatorstoreproduct_id}": {
+    "/creator-store-products/{creator-store-product}": {
       "get": {
         "responses": {
           "200": {
             "schema": {
-              "$ref": "#/components/schemas/CreatorStoreProduct"
+              "$ref": "#/components/schemas/creator-store-product"
             }
           }
         },
         "parameters": [
           {
             "in": "path",
-            "name": "creatorstoreproduct_id",
+            "name": "creator-store-product",
             "schema": {},
             "required": true,
             "type": "string"
@@ -63,14 +63,14 @@
         "responses": {
           "200": {
             "schema": {
-              "$ref": "#/components/schemas/CreatorStoreProduct"
+              "$ref": "#/components/schemas/creator-store-product"
             }
           }
         },
         "parameters": [
           {
             "in": "path",
-            "name": "creatorstoreproduct_id",
+            "name": "creator-store-product",
             "schema": {},
             "required": true,
             "type": "string"
@@ -79,7 +79,7 @@
             "in": "body",
             "name": "body",
             "schema": {
-              "$ref": "#/components/schemas/CreatorStoreProduct"
+              "$ref": "#/components/schemas/creator-store-product"
             }
           }
         ]
@@ -90,7 +90,7 @@
         "responses": {
           "200": {
             "schema": {
-              "$ref": "#/components/schemas/Universe"
+              "$ref": "#/components/schemas/universe"
             }
           }
         },
@@ -99,7 +99,7 @@
             "in": "body",
             "name": "body",
             "schema": {
-              "$ref": "#/components/schemas/Universe"
+              "$ref": "#/components/schemas/universe"
             }
           },
           {
@@ -112,19 +112,19 @@
         ]
       }
     },
-    "/universes/{universe_id}": {
+    "/universes/{universe}": {
       "get": {
         "responses": {
           "200": {
             "schema": {
-              "$ref": "#/components/schemas/Universe"
+              "$ref": "#/components/schemas/universe"
             }
           }
         },
         "parameters": [
           {
             "in": "path",
-            "name": "universe_id",
+            "name": "universe",
             "schema": {},
             "required": true,
             "type": "string"
@@ -135,14 +135,14 @@
         "responses": {
           "200": {
             "schema": {
-              "$ref": "#/components/schemas/Universe"
+              "$ref": "#/components/schemas/universe"
             }
           }
         },
         "parameters": [
           {
             "in": "path",
-            "name": "universe_id",
+            "name": "universe",
             "schema": {},
             "required": true,
             "type": "string"
@@ -151,19 +151,19 @@
             "in": "body",
             "name": "body",
             "schema": {
-              "$ref": "#/components/schemas/Universe"
+              "$ref": "#/components/schemas/universe"
             }
           }
         ]
       }
     },
-    "/universes/{universe_id}/data-stores": {
+    "/universes/{universe}/data-stores": {
       "get": {
         "responses": {
           "200": {
             "schema": {
               "items": {
-                "$ref": "#/components/schemas/DataStore"
+                "$ref": "#/components/schemas/data-store"
               }
             }
           }
@@ -171,7 +171,21 @@
         "parameters": [
           {
             "in": "path",
-            "name": "universe_id",
+            "name": "universe",
+            "schema": {},
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "max_page_size",
+            "schema": {},
+            "required": true,
+            "type": "integer"
+          },
+          {
+            "in": "query",
+            "name": "page_token",
             "schema": {},
             "required": true,
             "type": "string"
@@ -179,26 +193,26 @@
         ]
       }
     },
-    "/universes/{universe_id}/data-stores/{datastore_id}": {
+    "/universes/{universe}/data-stores/{data-store}": {
       "get": {
         "responses": {
           "200": {
             "schema": {
-              "$ref": "#/components/schemas/DataStore"
+              "$ref": "#/components/schemas/data-store"
             }
           }
         },
         "parameters": [
           {
             "in": "path",
-            "name": "universe_id",
+            "name": "universe",
             "schema": {},
             "required": true,
             "type": "string"
           },
           {
             "in": "path",
-            "name": "datastore_id",
+            "name": "data-store",
             "schema": {},
             "required": true,
             "type": "string"
@@ -206,19 +220,135 @@
         ]
       }
     },
-    "/users/{user_id}": {
+    "/universes/{universe}/data-stores/{data-store}/entries": {
       "get": {
         "responses": {
           "200": {
             "schema": {
-              "$ref": "#/components/schemas/User"
+              "items": {
+                "$ref": "#/components/schemas/data-store-entry"
+              }
             }
           }
         },
         "parameters": [
           {
             "in": "path",
-            "name": "user_id",
+            "name": "universe",
+            "schema": {},
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "path",
+            "name": "data-store",
+            "schema": {},
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "max_page_size",
+            "schema": {},
+            "required": true,
+            "type": "integer"
+          },
+          {
+            "in": "query",
+            "name": "page_token",
+            "schema": {},
+            "required": true,
+            "type": "string"
+          }
+        ]
+      },
+      "post": {
+        "responses": {
+          "200": {
+            "schema": {
+              "$ref": "#/components/schemas/data-store-entry"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "universe",
+            "schema": {},
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "path",
+            "name": "data-store",
+            "schema": {},
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "$ref": "#/components/schemas/data-store-entry"
+            }
+          },
+          {
+            "in": "query",
+            "name": "id",
+            "schema": {},
+            "required": true,
+            "type": "string"
+          }
+        ]
+      }
+    },
+    "/universes/{universe}/data-stores/{data-store}/entries/{data-store-entry}": {
+      "get": {
+        "responses": {
+          "200": {
+            "schema": {
+              "$ref": "#/components/schemas/data-store-entry"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "universe",
+            "schema": {},
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "path",
+            "name": "data-store",
+            "schema": {},
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "path",
+            "name": "data-store-entry",
+            "schema": {},
+            "required": true,
+            "type": "string"
+          }
+        ]
+      }
+    },
+    "/users/{user}": {
+      "get": {
+        "responses": {
+          "200": {
+            "schema": {
+              "$ref": "#/components/schemas/user"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user",
             "schema": {},
             "required": true,
             "type": "string"
@@ -229,7 +359,7 @@
   },
   "components": {
     "schemas": {
-      "CreatorStoreProduct": {
+      "creator-store-product": {
         "type": "object",
         "properties": {
           "id": {
@@ -243,14 +373,14 @@
           }
         },
         "x-aep-resource": {
-          "singular": "CreatorStoreProduct",
+          "singular": "creator-store-product",
           "plural": "creator-store-products",
           "patterns": [
-            "/creator-store-products/{creatorstoreproduct_id}"
+            "/creator-store-products/{creator-store-product}"
           ]
         }
       },
-      "DataStore": {
+      "data-store": {
         "type": "object",
         "properties": {
           "id": {
@@ -264,17 +394,17 @@
           }
         },
         "x-aep-resource": {
-          "singular": "DataStore",
+          "singular": "data-store",
           "plural": "data-stores",
           "patterns": [
-            "/universes/{universe_id}/data-stores/{datastore_id}"
+            "/universes/{universe}/data-stores/{data-store}"
           ],
           "parents": [
-            "Universe"
+            "universe"
           ]
         }
       },
-      "Universe": {
+      "data-store-entry": {
         "type": "object",
         "properties": {
           "id": {
@@ -288,14 +418,38 @@
           }
         },
         "x-aep-resource": {
-          "singular": "Universe",
-          "plural": "universes",
+          "singular": "data-store-entry",
+          "plural": "data-store-entries",
           "patterns": [
-            "/universes/{universe_id}"
+            "/universes/{universe}/data-stores/{data-store}/entries/{data-store-entry}"
+          ],
+          "parents": [
+            "data-store"
           ]
         }
       },
-      "User": {
+      "universe": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "readOnly": true,
+            "x-terraform-id": true
+          },
+          "path": {
+            "type": "string",
+            "readOnly": true
+          }
+        },
+        "x-aep-resource": {
+          "singular": "universe",
+          "plural": "universes",
+          "patterns": [
+            "/universes/{universe}"
+          ]
+        }
+      },
+      "user": {
         "type": "object",
         "required": [
           "displayName"
@@ -315,10 +469,10 @@
           }
         },
         "x-aep-resource": {
-          "singular": "User",
+          "singular": "user",
           "plural": "users",
           "patterns": [
-            "/users/{user_id}"
+            "/users/{user}"
           ]
         }
       }

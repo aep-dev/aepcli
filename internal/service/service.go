@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
 )
@@ -48,7 +49,7 @@ func (s *Service) doRequest(r *http.Request) (string, error) {
 	for k, v := range s.Headers {
 		r.Header.Set(k, v)
 	}
-	fmt.Printf("Request: %s %s\n", r.Method, r.URL.String())
+	slog.Debug(fmt.Sprintf("Request: %s %s\n", r.Method, r.URL.String()))
 	resp, err := s.Client.Do(r)
 	if err != nil {
 		return "", err

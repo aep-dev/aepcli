@@ -62,10 +62,12 @@ func addResourceToMap(r *openapi.XAEPResource, resourceMap map[string]Resource, 
 		}
 		parents = append(parents, parentResource)
 	}
+
 	resource := Resource{
 		Singular: r.Singular,
 		Plural:   r.Plural,
-		Parent:   parents,
+		Parents:  parents,
+		Pattern:  strings.Split(r.Patterns[0], "/")[1:],
 	}
 	resourceMap[strings.ToLower(r.Plural)] = resource
 	return &resource, nil

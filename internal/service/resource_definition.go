@@ -11,29 +11,41 @@ import (
 type Resource struct {
 	Singular string
 	Plural   string
-	Parent   []*Resource
+	Parents  []*Resource
+	Pattern  []string // TOO(yft): support multiple patterns
 }
 
 func (r *Resource) ExecuteCommand(args []string) (*http.Request, error) {
 	c := cobra.Command{Use: r.Plural}
-	var parent string
 	var err error
 	var req *http.Request
+	var parents []*string
 
-	// TODO(yft): add support for multiple parents
-	if len(r.Parent) > 0 {
-		s := strings.ToLower(r.Parent[0].Singular)
-		c.PersistentFlags().StringVar(
-			&parent, s, "", fmt.Sprintf("The %v of the resource", s),
-		)
+	i := 1
+	for i < len(r.Pattern) {
+		p := r.Pattern[i]
+		flagName := p[1 : len(p)-1]
+		var flagValue string
+		parents = append(parents, &flagValue)
+		c.PersistentFlags().StringVar(&flagValue, flagName, "", fmt.Sprintf("The %v of the resource", flagName))
+		i += 2
 	}
 
 	withPrefix := func(path string) string {
-		// TODO(yft): add support for multiple parents
-		if len(r.Parent) > 0 {
-			return fmt.Sprintf("%s/%s/%s", r.Parent[0].Plural, parent, path)
+		pElems := []string{}
+		for i, p := range r.Pattern {
+			// last element, we assume this was handled by the caller.
+			if i == len(r.Pattern)-1 {
+				continue
+			}
+			if i%2 == 0 {
+				pElems = append(pElems, p)
+			} else {
+				pElems = append(pElems, *parents[i/2])
+			}
 		}
-		return path
+		prefix := strings.Join(pElems, "/")
+		return fmt.Sprintf("%s/%s", prefix, path)
 	}
 
 	createCmd := &cobra.Command{
@@ -41,7 +53,7 @@ func (r *Resource) ExecuteCommand(args []string) (*http.Request, error) {
 		Short: fmt.Sprintf("Create a %v", strings.ToLower(r.Singular)),
 		Run: func(cmd *cobra.Command, args []string) {
 			id := args[0]
-			p := withPrefix(fmt.Sprintf("%s?id=%s", r.Plural, id))
+			p := withPrefix(fmt.Sprintf("?id=%s", id))
 			req, err = http.NewRequest("POST", p, nil)
 		},
 	}
@@ -51,7 +63,7 @@ func (r *Resource) ExecuteCommand(args []string) (*http.Request, error) {
 		Short: fmt.Sprintf("Get a %v", strings.ToLower(r.Singular)),
 		Run: func(cmd *cobra.Command, args []string) {
 			id := args[0]
-			p := withPrefix(fmt.Sprintf("%s/%s", r.Plural, id))
+			p := withPrefix(id)
 			req, err = http.NewRequest("GET", p, nil)
 		},
 	}
@@ -68,7 +80,7 @@ func (r *Resource) ExecuteCommand(args []string) (*http.Request, error) {
 		Short: fmt.Sprintf("Delete a %v", strings.ToLower(r.Singular)),
 		Run: func(cmd *cobra.Command, args []string) {
 			id := args[0]
-			p := withPrefix(fmt.Sprintf("%s/%s", r.Plural, id))
+			p := withPrefix(id)
 			req, err = http.NewRequest("DELETE", p, nil)
 		},
 	}
@@ -77,7 +89,7 @@ func (r *Resource) ExecuteCommand(args []string) (*http.Request, error) {
 		Use:   "list",
 		Short: fmt.Sprintf("List %v", strings.ToLower(r.Plural)),
 		Run: func(cmd *cobra.Command, args []string) {
-			p := withPrefix(r.Plural)
+			p := withPrefix("")
 			req, err = http.NewRequest("GET", p, nil)
 		},
 	}

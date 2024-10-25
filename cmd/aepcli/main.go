@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -14,6 +15,16 @@ import (
 )
 
 func main() {
+	err := aepcli()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	os.Exit(0)
+}
+
+func aepcli() error {
+	var logLevel string
 	var fileOrAlias string
 	var resource string
 	var additionalArgs []string
@@ -32,11 +43,15 @@ func main() {
 	var rawHeaders []string
 	rootCmd.Flags().SetInterspersed(false) // allow sub parsers to parse subsequent flags after the resource
 	rootCmd.PersistentFlags().StringArrayVar(&rawHeaders, "header", []string{}, "Specify headers in the format key=value")
+	rootCmd.PersistentFlags().StringVar(&logLevel, "log-level", "info", "Set the logging level (debug, info, warn, error)")
 	rootCmd.MarkPersistentFlagRequired("host")
 
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		return err
+	}
+
+	if err := setLogLevel(logLevel); err != nil {
+		return fmt.Errorf("unable to set log level: %w", err)
 	}
 
 	c, err := config.ReadConfig()
@@ -80,7 +95,7 @@ func main() {
 		os.Exit(1)
 	}
 	fmt.Println(result)
-	os.Exit(0)
+	return nil
 }
 
 func parseHeaders(headers []string) (map[string]string, error) {
@@ -93,4 +108,22 @@ func parseHeaders(headers []string) (map[string]string, error) {
 		parsedHeaders[parts[0]] = parts[1]
 	}
 	return parsedHeaders, nil
+}
+
+func setLogLevel(levelAsString string) error {
+	level := slog.LevelInfo
+	switch levelAsString {
+	case "debug":
+		level = slog.LevelDebug
+	case "info":
+		level = slog.LevelInfo
+	case "warn":
+		level = slog.LevelWarn
+	case "error":
+		level = slog.LevelError
+	default:
+		return fmt.Errorf("invalid log level:", levelAsString)
+	}
+	slog.SetLogLoggerLevel(level)
+	return nil
 }
