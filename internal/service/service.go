@@ -49,19 +49,27 @@ func (s *Service) doRequest(r *http.Request) (string, error) {
 	for k, v := range s.Headers {
 		r.Header.Set(k, v)
 	}
-	slog.Debug(fmt.Sprintf("Request: %s %s\n", r.Method, r.URL.String()))
+	body := ""
+	if r.Body != nil {
+		b, err := io.ReadAll(r.Body)
+		if err != nil {
+			return "", fmt.Errorf("unable to read request body: %v", err)
+		}
+		r.Body = io.NopCloser(bytes.NewBuffer(b))
+		body = string(b)
+	}
+	slog.Debug(fmt.Sprintf("Request: %s %s\n%s", r.Method, r.URL.String(), string(body)))
 	resp, err := s.Client.Do(r)
 	if err != nil {
 		return "", err
 	}
 	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
+	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("unable to read response body: %v", err)
 	}
 	var prettyJSON bytes.Buffer
-	err = json.Indent(&prettyJSON, body, "", "  ")
+	err = json.Indent(&prettyJSON, respBody, "", "  ")
 	if err != nil {
 		return "", fmt.Errorf("failed to format JSON: %w", err)
 	}

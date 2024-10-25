@@ -1,10 +1,13 @@
 package service
 
 import (
+	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"strings"
 
+	"github.com/aep-dev/aepcli/internal/openapi"
 	"github.com/spf13/cobra"
 )
 
@@ -13,6 +16,7 @@ type Resource struct {
 	Plural   string
 	Parents  []*Resource
 	Pattern  []string // TOO(yft): support multiple patterns
+	Schema   openapi.Schema
 }
 
 func (r *Resource) ExecuteCommand(args []string) (*http.Request, error) {
@@ -22,7 +26,7 @@ func (r *Resource) ExecuteCommand(args []string) (*http.Request, error) {
 	var parents []*string
 
 	i := 1
-	for i < len(r.Pattern) {
+	for i < len(r.Pattern)-1 {
 		p := r.Pattern[i]
 		flagName := p[1 : len(p)-1]
 		var flagValue string
@@ -45,42 +49,63 @@ func (r *Resource) ExecuteCommand(args []string) (*http.Request, error) {
 			}
 		}
 		prefix := strings.Join(pElems, "/")
-		return fmt.Sprintf("%s/%s", prefix, path)
+		return fmt.Sprintf("%s%s", prefix, path)
 	}
 
+	createArgs := map[string]*string{}
 	createCmd := &cobra.Command{
 		Use:   "create",
 		Short: fmt.Sprintf("Create a %v", strings.ToLower(r.Singular)),
 		Run: func(cmd *cobra.Command, args []string) {
 			id := args[0]
 			p := withPrefix(fmt.Sprintf("?id=%s", id))
-			req, err = http.NewRequest("POST", p, nil)
+			jsonBody, err := generateJsonPayload(createArgs)
+			if err != nil {
+				slog.Error(fmt.Sprintf("unable to create json body for update: %v", err))
+			}
+			req, err = http.NewRequest("POST", p, strings.NewReader(string(jsonBody)))
+			if err != nil {
+				slog.Error(fmt.Sprintf("error creating post request: %v", err))
+			}
 		},
 	}
+	addSchemaFlags(createCmd, r.Schema, createArgs)
 
 	getCmd := &cobra.Command{
 		Use:   "get",
 		Short: fmt.Sprintf("Get a %v", strings.ToLower(r.Singular)),
 		Run: func(cmd *cobra.Command, args []string) {
 			id := args[0]
-			p := withPrefix(id)
+			p := withPrefix(fmt.Sprintf("/%s", id))
 			req, err = http.NewRequest("GET", p, nil)
 		},
 	}
 
+	updateArgs := map[string]*string{}
 	updateCmd := &cobra.Command{
 		Use:   "update",
 		Short: fmt.Sprintf("Update a %v", strings.ToLower(r.Singular)),
 		Run: func(cmd *cobra.Command, args []string) {
+			id := args[0]
+			p := withPrefix(fmt.Sprintf("/%s", id))
+			jsonBody, err := generateJsonPayload(updateArgs)
+			if err != nil {
+				slog.Error(fmt.Sprintf("unable to create json body for update: %v", err))
+			}
+			req, err = http.NewRequest("PATCH", p, strings.NewReader(string(jsonBody)))
+			if err != nil {
+				slog.Error(fmt.Sprintf("error creating patch request: %v", err))
+			}
 		},
 	}
+	addSchemaFlags(updateCmd, r.Schema, updateArgs)
 
 	deleteCmd := &cobra.Command{
 		Use:   "delete",
 		Short: fmt.Sprintf("Delete a %v", strings.ToLower(r.Singular)),
 		Run: func(cmd *cobra.Command, args []string) {
 			id := args[0]
-			p := withPrefix(id)
+			p := withPrefix(fmt.Sprintf("/%s", id))
 			req, err = http.NewRequest("DELETE", p, nil)
 		},
 	}
@@ -100,4 +125,42 @@ func (r *Resource) ExecuteCommand(args []string) (*http.Request, error) {
 		return nil, err
 	}
 	return req, err
+}
+
+// TODO(yft): add support for more types
+func addSchemaFlags(c *cobra.Command, schema openapi.Schema, args map[string]*string) error {
+	for name, prop := range schema.Properties {
+		if prop.ReadOnly {
+			continue
+		}
+		// slog.Debug(fmt.Sprintf("Adding flag %v", name))
+		var value string
+		args[name] = &value
+		switch prop.Type {
+		case "string":
+			c.Flags().StringVar(&value, name, "", fmt.Sprintf("The %v of the resource", name))
+		// case "integer":
+		// c.Flags().IntVar(&value, name, 0, fmt.Sprintf("The %v of the resource", name))
+		// case "boolean":
+		// c.Flags().BoolVar(&value, name, false, fmt.Sprintf("The %v of the resource", name))
+		default:
+			fmt.Printf("Unsupported type: %v\n", prop.Type)
+		}
+	}
+	for _, f := range schema.Required {
+		c.MarkFlagRequired(f)
+	}
+	return nil
+}
+
+func generateJsonPayload(args map[string]*string) (string, error) {
+	body := map[string]interface{}{}
+	for key, value := range args {
+		body[key] = *value
+	}
+	jsonBody, err := json.Marshal(body)
+	if err != nil {
+		return "", fmt.Errorf("error marshalling JSON: %v", err)
+	}
+	return string(jsonBody), nil
 }

@@ -29,6 +29,12 @@ aepcli --openapi-file=https://bookstore.example.com/openapi.json publishers list
 aepcli --openapi-file=https://bookstore.example.com/openapi.json publishers get peter-pan
 ```
 
+### Update a resource
+
+```bash
+aepcli roblox universes update ${UNIVERSE_ID} --displayName=foo
+```
+
 ### Subresources
 
 Sometimes, a resource is a child of another resource (e.g. a book is listed under a publiher).

@@ -81,6 +81,8 @@ type Schema struct {
 	Properties   map[string]Schema `json:"properties,omitempty"`
 	Ref          string            `json:"$ref,omitempty"`
 	XAEPResource *XAEPResource     `json:"x-aep-resource,omitempty"`
+	ReadOnly     bool              `json:"readOnly,omitempty"`
+	Required     []string          `json:"required,omitempty"`
 }
 
 type Components struct {
@@ -91,7 +93,7 @@ type XAEPResource struct {
 	Singular string   `json:"singular,omitempty"`
 	Plural   string   `json:"plural,omitempty"`
 	Patterns []string `json:"patterns,omitempty"`
-	Parents  []string `json:"parents,omitempty`
+	Parents  []string `json:"parents,omitempty"`
 }
 
 func FetchOpenAPI(pathOrURL string) (*OpenAPI, error) {
