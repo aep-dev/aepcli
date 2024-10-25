@@ -52,14 +52,14 @@ func (r *Resource) ExecuteCommand(args []string) (*http.Request, error) {
 		return fmt.Sprintf("%s%s", prefix, path)
 	}
 
-	createArgs := map[string]*string{}
+	createArgs := map[string]interface{}{}
 	createCmd := &cobra.Command{
 		Use:   "create",
 		Short: fmt.Sprintf("Create a %v", strings.ToLower(r.Singular)),
 		Run: func(cmd *cobra.Command, args []string) {
 			id := args[0]
 			p := withPrefix(fmt.Sprintf("?id=%s", id))
-			jsonBody, err := generateJsonPayload(createArgs)
+			jsonBody, err := generateJsonPayload(cmd, createArgs)
 			if err != nil {
 				slog.Error(fmt.Sprintf("unable to create json body for update: %v", err))
 			}
@@ -81,14 +81,14 @@ func (r *Resource) ExecuteCommand(args []string) (*http.Request, error) {
 		},
 	}
 
-	updateArgs := map[string]*string{}
+	updateArgs := map[string]interface{}{}
 	updateCmd := &cobra.Command{
 		Use:   "update",
 		Short: fmt.Sprintf("Update a %v", strings.ToLower(r.Singular)),
 		Run: func(cmd *cobra.Command, args []string) {
 			id := args[0]
 			p := withPrefix(fmt.Sprintf("/%s", id))
-			jsonBody, err := generateJsonPayload(updateArgs)
+			jsonBody, err := generateJsonPayload(cmd, updateArgs)
 			if err != nil {
 				slog.Error(fmt.Sprintf("unable to create json body for update: %v", err))
 			}
@@ -128,21 +128,28 @@ func (r *Resource) ExecuteCommand(args []string) (*http.Request, error) {
 }
 
 // TODO(yft): add support for more types
-func addSchemaFlags(c *cobra.Command, schema openapi.Schema, args map[string]*string) error {
+func addSchemaFlags(c *cobra.Command, schema openapi.Schema, args map[string]interface{}) error {
 	for name, prop := range schema.Properties {
 		if prop.ReadOnly {
 			continue
 		}
 		// slog.Debug(fmt.Sprintf("Adding flag %v", name))
-		var value string
-		args[name] = &value
 		switch prop.Type {
 		case "string":
+			var value string
+			args[name] = value
 			c.Flags().StringVar(&value, name, "", fmt.Sprintf("The %v of the resource", name))
 		// case "integer":
 		// c.Flags().IntVar(&value, name, 0, fmt.Sprintf("The %v of the resource", name))
-		// case "boolean":
-		// c.Flags().BoolVar(&value, name, false, fmt.Sprintf("The %v of the resource", name))
+		case "boolean":
+			// TODO(yft): figure out how to not set the value in the map if the user does not set it.
+			var value bool
+			args[name] = &value
+			c.Flags().BoolVar(&value, name, false, fmt.Sprintf("The %v of the resource", name))
+		case "object":
+			var parsedValue map[string]interface{}
+			args[name] = &parsedValue
+			c.Flags().Var(&JSONFlag{&parsedValue}, name, fmt.Sprintf("The %v of the resource", name))
 		default:
 			fmt.Printf("Unsupported type: %v\n", prop.Type)
 		}
@@ -153,10 +160,12 @@ func addSchemaFlags(c *cobra.Command, schema openapi.Schema, args map[string]*st
 	return nil
 }
 
-func generateJsonPayload(args map[string]*string) (string, error) {
+func generateJsonPayload(c *cobra.Command, args map[string]interface{}) (string, error) {
 	body := map[string]interface{}{}
 	for key, value := range args {
-		body[key] = *value
+		if c.Flags().Lookup(key).Changed {
+			body[key] = value
+		}
 	}
 	jsonBody, err := json.Marshal(body)
 	if err != nil {
