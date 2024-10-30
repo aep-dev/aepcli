@@ -127,25 +127,31 @@ func (r *Resource) ExecuteCommand(args []string) (*http.Request, error) {
 	return req, err
 }
 
-// TODO(yft): add support for more types
 func addSchemaFlags(c *cobra.Command, schema openapi.Schema, args map[string]interface{}) error {
 	for name, prop := range schema.Properties {
 		if prop.ReadOnly {
 			continue
 		}
-		// slog.Debug(fmt.Sprintf("Adding flag %v", name))
 		switch prop.Type {
 		case "string":
 			var value string
-			args[name] = value
+			args[name] = &value
 			c.Flags().StringVar(&value, name, "", fmt.Sprintf("The %v of the resource", name))
-		// case "integer":
-		// c.Flags().IntVar(&value, name, 0, fmt.Sprintf("The %v of the resource", name))
+		case "integer":
+			var value int
+			args[name] = &value
+			c.Flags().IntVar(&value, name, 0, fmt.Sprintf("The %v of the resource", name))
 		case "boolean":
-			// TODO(yft): figure out how to not set the value in the map if the user does not set it.
 			var value bool
 			args[name] = &value
 			c.Flags().BoolVar(&value, name, false, fmt.Sprintf("The %v of the resource", name))
+		case "array":
+			if prop.Items == nil {
+				return fmt.Errorf("items is required for array type, not found for field %v", name)
+			}
+			var value []interface{}
+			args[name] = &value
+			c.Flags().Var(&ArrayFlag{&value, prop.Items.Type}, name, fmt.Sprintf("The %v of the resource", name))
 		case "object":
 			var parsedValue map[string]interface{}
 			args[name] = &parsedValue
