@@ -66,9 +66,9 @@ func GetServiceDefinition(api *openapi.OpenAPI, pathPrefix string) (*ServiceDefi
 					if resp.Schema == nil {
 						slog.Warn(fmt.Sprintf("resource %q has a LIST method with a response schema, but the response is not an object.", path))
 					} else {
-						if itemsSchema, ok := resp.Schema.Properties["items"]; ok {
-							if itemsSchema.Type == "array" {
-								sRef = itemsSchema.Items
+						if resultsSchema, ok := resp.Schema.Properties["results"]; ok {
+							if resultsSchema.Type == "array" {
+								sRef = resultsSchema.Items
 								r.ListMethod = &ListMethod{}
 							} else {
 								slog.Warn(fmt.Sprintf("resource %q has a LIST method with a response schema, but the items field is not an array.", path))

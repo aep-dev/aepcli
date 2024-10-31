@@ -25,7 +25,7 @@ func TestGetServiceDefinition2(t *testing.T) {
 								"200": {
 									Schema: &openapi.Schema{
 										Properties: map[string]openapi.Schema{
-											"items": {
+											"results": {
 												Type: "array",
 												Items: &openapi.Schema{
 													Ref: "#/components/schemas/Widget",
