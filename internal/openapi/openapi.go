@@ -37,6 +37,7 @@ type Info struct {
 
 type PathItem struct {
 	Get    *Operation `json:"get,omitempty"`
+	Patch  *Operation `json:"patch,omitempty"`
 	Post   *Operation `json:"post,omitempty"`
 	Put    *Operation `json:"put,omitempty"`
 	Delete *Operation `json:"delete,omitempty"`
@@ -62,12 +63,14 @@ type Parameter struct {
 type Response struct {
 	Description string               `json:"description"`
 	Content     map[string]MediaType `json:"content"`
+	Schema      *Schema              `json:"schema,omitempty"`
 }
 
 type RequestBody struct {
 	Description string               `json:"description"`
 	Content     map[string]MediaType `json:"content"`
 	Required    bool                 `json:"required"`
+	Schema      *Schema              `json:"schema,omitempty"`
 }
 
 type MediaType struct {

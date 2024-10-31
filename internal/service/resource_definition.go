@@ -12,11 +12,32 @@ import (
 )
 
 type Resource struct {
-	Singular string
-	Plural   string
-	Parents  []*Resource
-	Pattern  []string // TOO(yft): support multiple patterns
-	Schema   openapi.Schema
+	Singular     string
+	Plural       string
+	Parents      []*Resource
+	Pattern      []string // TOO(yft): support multiple patterns
+	Schema       *openapi.Schema
+	GetMethod    *GetMethod
+	ListMethod   *ListMethod
+	CreateMethod *CreateMethod
+	UpdateMethod *UpdateMethod
+	DeleteMethod *DeleteMethod
+}
+
+type CreateMethod struct {
+	SupportsUserSettableCreate bool
+}
+
+type GetMethod struct {
+}
+
+type UpdateMethod struct {
+}
+
+type ListMethod struct {
+}
+
+type DeleteMethod struct {
 }
 
 func (r *Resource) ExecuteCommand(args []string) (*http.Request, error) {
@@ -69,7 +90,7 @@ func (r *Resource) ExecuteCommand(args []string) (*http.Request, error) {
 			}
 		},
 	}
-	addSchemaFlags(createCmd, r.Schema, createArgs)
+	addSchemaFlags(createCmd, *r.Schema, createArgs)
 
 	getCmd := &cobra.Command{
 		Use:   "get",
@@ -98,7 +119,7 @@ func (r *Resource) ExecuteCommand(args []string) (*http.Request, error) {
 			}
 		},
 	}
-	addSchemaFlags(updateCmd, r.Schema, updateArgs)
+	addSchemaFlags(updateCmd, *r.Schema, updateArgs)
 
 	deleteCmd := &cobra.Command{
 		Use:   "delete",

@@ -12,7 +12,7 @@ var projectResource = Resource{
 	Plural:   "projects",
 	Pattern:  []string{"projects", "{project}"},
 	Parents:  []*Resource{},
-	Schema: openapi.Schema{
+	Schema: &openapi.Schema{
 		Properties: map[string]openapi.Schema{
 			"name": {
 				Type: "string",
