@@ -41,7 +41,7 @@ type DeleteMethod struct {
 }
 
 func (r *Resource) ExecuteCommand(args []string) (*http.Request, error) {
-	c := cobra.Command{Use: r.Plural}
+	c := cobra.Command{Use: r.Singular}
 	var err error
 	var req *http.Request
 	var parents []*string
@@ -73,74 +73,91 @@ func (r *Resource) ExecuteCommand(args []string) (*http.Request, error) {
 		return fmt.Sprintf("%s%s", prefix, path)
 	}
 
-	createArgs := map[string]interface{}{}
-	createCmd := &cobra.Command{
-		Use:   "create",
-		Short: fmt.Sprintf("Create a %v", strings.ToLower(r.Singular)),
-		Run: func(cmd *cobra.Command, args []string) {
-			id := args[0]
-			p := withPrefix(fmt.Sprintf("?id=%s", id))
-			jsonBody, err := generateJsonPayload(cmd, createArgs)
-			if err != nil {
-				slog.Error(fmt.Sprintf("unable to create json body for update: %v", err))
-			}
-			req, err = http.NewRequest("POST", p, strings.NewReader(string(jsonBody)))
-			if err != nil {
-				slog.Error(fmt.Sprintf("error creating post request: %v", err))
-			}
-		},
-	}
-	addSchemaFlags(createCmd, *r.Schema, createArgs)
-
-	getCmd := &cobra.Command{
-		Use:   "get",
-		Short: fmt.Sprintf("Get a %v", strings.ToLower(r.Singular)),
-		Run: func(cmd *cobra.Command, args []string) {
-			id := args[0]
-			p := withPrefix(fmt.Sprintf("/%s", id))
-			req, err = http.NewRequest("GET", p, nil)
-		},
+	if r.CreateMethod != nil {
+		createArgs := map[string]interface{}{}
+		createCmd := &cobra.Command{
+			Use:   "create",
+			Short: fmt.Sprintf("Create a %v", strings.ToLower(r.Singular)),
+			Run: func(cmd *cobra.Command, args []string) {
+				id := args[0]
+				p := withPrefix(fmt.Sprintf("?id=%s", id))
+				jsonBody, err := generateJsonPayload(cmd, createArgs)
+				if err != nil {
+					slog.Error(fmt.Sprintf("unable to create json body for update: %v", err))
+				}
+				req, err = http.NewRequest("POST", p, strings.NewReader(string(jsonBody)))
+				if err != nil {
+					slog.Error(fmt.Sprintf("error creating post request: %v", err))
+				}
+			},
+		}
+		addSchemaFlags(createCmd, *r.Schema, createArgs)
+		c.AddCommand(createCmd)
 	}
 
-	updateArgs := map[string]interface{}{}
-	updateCmd := &cobra.Command{
-		Use:   "update",
-		Short: fmt.Sprintf("Update a %v", strings.ToLower(r.Singular)),
-		Run: func(cmd *cobra.Command, args []string) {
-			id := args[0]
-			p := withPrefix(fmt.Sprintf("/%s", id))
-			jsonBody, err := generateJsonPayload(cmd, updateArgs)
-			if err != nil {
-				slog.Error(fmt.Sprintf("unable to create json body for update: %v", err))
-			}
-			req, err = http.NewRequest("PATCH", p, strings.NewReader(string(jsonBody)))
-			if err != nil {
-				slog.Error(fmt.Sprintf("error creating patch request: %v", err))
-			}
-		},
-	}
-	addSchemaFlags(updateCmd, *r.Schema, updateArgs)
-
-	deleteCmd := &cobra.Command{
-		Use:   "delete",
-		Short: fmt.Sprintf("Delete a %v", strings.ToLower(r.Singular)),
-		Run: func(cmd *cobra.Command, args []string) {
-			id := args[0]
-			p := withPrefix(fmt.Sprintf("/%s", id))
-			req, err = http.NewRequest("DELETE", p, nil)
-		},
+	if r.GetMethod != nil {
+		getCmd := &cobra.Command{
+			Use:   "get",
+			Short: fmt.Sprintf("Get a %v", strings.ToLower(r.Singular)),
+			Run: func(cmd *cobra.Command, args []string) {
+				id := args[0]
+				p := withPrefix(fmt.Sprintf("/%s", id))
+				req, err = http.NewRequest("GET", p, nil)
+			},
+		}
+		c.AddCommand(getCmd)
 	}
 
-	listCmd := &cobra.Command{
-		Use:   "list",
-		Short: fmt.Sprintf("List %v", strings.ToLower(r.Plural)),
-		Run: func(cmd *cobra.Command, args []string) {
-			p := withPrefix("")
-			req, err = http.NewRequest("GET", p, nil)
-		},
+	if r.UpdateMethod != nil {
+
+		updateArgs := map[string]interface{}{}
+		updateCmd := &cobra.Command{
+			Use:   "update",
+			Short: fmt.Sprintf("Update a %v", strings.ToLower(r.Singular)),
+			Run: func(cmd *cobra.Command, args []string) {
+				id := args[0]
+				p := withPrefix(fmt.Sprintf("/%s", id))
+				jsonBody, err := generateJsonPayload(cmd, updateArgs)
+				if err != nil {
+					slog.Error(fmt.Sprintf("unable to create json body for update: %v", err))
+				}
+				req, err = http.NewRequest("PATCH", p, strings.NewReader(string(jsonBody)))
+				if err != nil {
+					slog.Error(fmt.Sprintf("error creating patch request: %v", err))
+				}
+			},
+		}
+		addSchemaFlags(updateCmd, *r.Schema, updateArgs)
+		c.AddCommand(updateCmd)
 	}
 
-	c.AddCommand(createCmd, getCmd, updateCmd, deleteCmd, listCmd)
+	if r.DeleteMethod != nil {
+
+		deleteCmd := &cobra.Command{
+			Use:   "delete",
+			Short: fmt.Sprintf("Delete a %v", strings.ToLower(r.Singular)),
+			Run: func(cmd *cobra.Command, args []string) {
+				id := args[0]
+				p := withPrefix(fmt.Sprintf("/%s", id))
+				req, err = http.NewRequest("DELETE", p, nil)
+			},
+		}
+		c.AddCommand(deleteCmd)
+	}
+
+	if r.ListMethod != nil {
+
+		listCmd := &cobra.Command{
+			Use:   "list",
+			Short: fmt.Sprintf("List %v", strings.ToLower(r.Singular)),
+			Run: func(cmd *cobra.Command, args []string) {
+				p := withPrefix("")
+				req, err = http.NewRequest("GET", p, nil)
+			},
+		}
+		c.AddCommand(listCmd)
+	}
+
 	c.SetArgs(args)
 	if err := c.Execute(); err != nil {
 		return nil, err
