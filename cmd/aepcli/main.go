@@ -41,9 +41,11 @@ func aepcli() error {
 	}
 
 	var rawHeaders []string
+	var pathPrefix string
 	rootCmd.Flags().SetInterspersed(false) // allow sub parsers to parse subsequent flags after the resource
 	rootCmd.PersistentFlags().StringArrayVar(&rawHeaders, "header", []string{}, "Specify headers in the format key=value")
 	rootCmd.PersistentFlags().StringVar(&logLevel, "log-level", "info", "Set the logging level (debug, info, warn, error)")
+	rootCmd.PersistentFlags().StringVar(&pathPrefix, "path-prefix", "", "Specify a path prefix that is prepended to all paths in the openapi schema. This will strip them when evaluating the resource hierarchy paths.")
 	rootCmd.MarkPersistentFlagRequired("host")
 
 	if err := rootCmd.Execute(); err != nil {
@@ -67,6 +69,9 @@ func aepcli() error {
 			os.Exit(1)
 		}
 		fileOrAlias = filepath.Join(cd, api.OpenAPIPath)
+		if api.PathPrefix == "" {
+			pathPrefix = api.PathPrefix
+		}
 		rawHeaders = append(rawHeaders, api.Headers...)
 	}
 
@@ -75,7 +80,7 @@ func aepcli() error {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	serviceDefinition, err := service.GetServiceDefinition(openapi)
+	serviceDefinition, err := service.GetServiceDefinition(openapi, pathPrefix)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -91,8 +96,7 @@ func aepcli() error {
 
 	result, err := s.ExecuteCommand(resource, additionalArgs)
 	if err != nil {
-		fmt.Println("an error occurred: %v", err)
-		os.Exit(1)
+		return err
 	}
 	fmt.Println(result)
 	return nil

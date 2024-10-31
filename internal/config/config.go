@@ -16,6 +16,7 @@ type API struct {
 	Name        string
 	OpenAPIPath string
 	Headers     []string
+	PathPrefix  string
 }
 
 // ReadConfig reads the configuration from the default configuration file.

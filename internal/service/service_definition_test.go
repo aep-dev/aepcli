@@ -182,7 +182,7 @@ func TestGetServiceDefinition2(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := GetServiceDefinition2(tt.api)
+			result, err := GetServiceDefinition(tt.api)
 
 			if tt.expectedError != "" {
 				assert.Error(t, err)
