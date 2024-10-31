@@ -63,7 +63,6 @@ type Parameter struct {
 type Response struct {
 	Description string               `json:"description"`
 	Content     map[string]MediaType `json:"content"`
-	Schema      *Schema              `json:"schema,omitempty"`
 }
 
 type RequestBody struct {

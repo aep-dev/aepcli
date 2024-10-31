@@ -69,7 +69,7 @@ func aepcli() error {
 			os.Exit(1)
 		}
 		fileOrAlias = filepath.Join(cd, api.OpenAPIPath)
-		if api.PathPrefix == "" {
+		if pathPrefix == "" {
 			pathPrefix = api.PathPrefix
 		}
 		rawHeaders = append(rawHeaders, api.Headers...)
@@ -126,7 +126,7 @@ func setLogLevel(levelAsString string) error {
 	case "error":
 		level = slog.LevelError
 	default:
-		return fmt.Errorf("invalid log level:", levelAsString)
+		return fmt.Errorf("invalid log level: %v", levelAsString)
 	}
 	slog.SetLogLoggerLevel(level)
 	return nil

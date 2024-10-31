@@ -8,6 +8,8 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"sort"
+	"strings"
 )
 
 type Service struct {
@@ -25,9 +27,12 @@ func NewService(serviceDefinition ServiceDefinition, headers map[string]string) 
 }
 
 func (s *Service) ExecuteCommand(resource string, args []string) (string, error) {
+	if resource == "--help" {
+		return s.ListResources(), nil
+	}
 	r, err := s.GetResource(resource)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("%v\n%v", err, s.ListResources())
 	}
 	req, err := r.ExecuteCommand(args)
 	if err != nil {
@@ -74,4 +79,19 @@ func (s *Service) doRequest(r *http.Request) (string, error) {
 		return "", fmt.Errorf("failed to format JSON: %w", err)
 	}
 	return prettyJSON.String(), nil
+}
+
+func (s *Service) ListResources() string {
+	var resources []string
+	for singular := range s.Resources {
+		resources = append(resources, singular)
+	}
+	sort.Strings(resources)
+
+	var output strings.Builder
+	output.WriteString("Available resources:\n")
+	for _, r := range resources {
+		output.WriteString(fmt.Sprintf("  - %s\n", r))
+	}
+	return output.String()
 }

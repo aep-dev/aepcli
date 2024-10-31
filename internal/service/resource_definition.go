@@ -191,11 +191,10 @@ func addSchemaFlags(c *cobra.Command, schema openapi.Schema, args map[string]int
 			args[name] = &value
 			c.Flags().Var(&ArrayFlag{&value, prop.Items.Type}, name, fmt.Sprintf("The %v of the resource", name))
 		case "object":
+		default:
 			var parsedValue map[string]interface{}
 			args[name] = &parsedValue
 			c.Flags().Var(&JSONFlag{&parsedValue}, name, fmt.Sprintf("The %v of the resource", name))
-		default:
-			fmt.Printf("Unsupported type: %v\n", prop.Type)
 		}
 	}
 	for _, f := range schema.Required {

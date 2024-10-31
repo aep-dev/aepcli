@@ -10,23 +10,29 @@ import (
 	"github.com/aep-dev/aepcli/internal/utils"
 )
 
+const contentType = "application/json"
+
 type ServiceDefinition struct {
 	ServerURL string
 	Resources map[string]*Resource
 }
 
 func GetServiceDefinition(api *openapi.OpenAPI, pathPrefix string) (*ServiceDefinition, error) {
+	slog.Debug("parsing openapi", "pathPrefix", pathPrefix)
 	resourceBySingular := make(map[string]*Resource)
 	// we try to parse the paths to find possible resources, since
 	// they may not always be annotated as such.
 	for path, pathItem := range api.Paths {
-		path = strings.TrimPrefix(path, pathPrefix)
+		path = path[len(pathPrefix):]
+		slog.Debug("path", "path", path)
 		var r Resource
 		var sRef *openapi.Schema
 		p := getPatternInfo(path)
 		if p == nil { // not a resource pattern
+			slog.Debug("path is not a resource", "path", path)
 			continue
 		}
+		slog.Debug("parsing path for resource", "path", path)
 		if p.IsResourcePattern {
 			// treat it like a collection pattern (update, delete, get)
 			if pathItem.Delete != nil {
@@ -34,13 +40,15 @@ func GetServiceDefinition(api *openapi.OpenAPI, pathPrefix string) (*ServiceDefi
 			}
 			if pathItem.Get != nil {
 				if resp, ok := pathItem.Get.Responses["200"]; ok {
-					sRef = resp.Schema
+					ct := resp.Content[contentType]
+					sRef = &ct.Schema
 					r.GetMethod = &GetMethod{}
 				}
 			}
 			if pathItem.Patch != nil {
 				if resp, ok := pathItem.Patch.Responses["200"]; ok {
-					sRef = resp.Schema
+					ct := resp.Content[contentType]
+					sRef = &ct.Schema
 					r.UpdateMethod = &UpdateMethod{}
 				}
 			}
@@ -49,7 +57,8 @@ func GetServiceDefinition(api *openapi.OpenAPI, pathPrefix string) (*ServiceDefi
 			if pathItem.Post != nil {
 				// check if there is a query parameter "id"
 				if resp, ok := pathItem.Post.Responses["200"]; ok {
-					sRef = resp.Schema
+					ct := resp.Content[contentType]
+					sRef = &ct.Schema
 					supportsUserSettableCreate := false
 					for _, param := range pathItem.Post.Parameters {
 						if param.Name == "id" {
@@ -63,19 +72,22 @@ func GetServiceDefinition(api *openapi.OpenAPI, pathPrefix string) (*ServiceDefi
 			// list method
 			if pathItem.Get != nil {
 				if resp, ok := pathItem.Get.Responses["200"]; ok {
-					if resp.Schema == nil {
-						slog.Warn(fmt.Sprintf("resource %q has a LIST method with a response schema, but the response is not an object.", path))
-					} else {
-						if resultsSchema, ok := resp.Schema.Properties["results"]; ok {
-							if resultsSchema.Type == "array" {
-								sRef = resultsSchema.Items
-								r.ListMethod = &ListMethod{}
-							} else {
-								slog.Warn(fmt.Sprintf("resource %q has a LIST method with a response schema, but the items field is not an array.", path))
-							}
-						} else {
-							slog.Warn(fmt.Sprintf("resource %q has a LIST method with a response schema, but the items field is not present or is not an array.", path))
+					ct := resp.Content[contentType]
+					resolvedSchema, err := dereferencedSchema(ct.Schema, api)
+					if err != nil {
+						return nil, fmt.Errorf("error dereferencing schema %q: %v", ct.Schema.Ref, err)
+					}
+					found := false
+					for _, property := range resolvedSchema.Properties {
+						if property.Type == "array" {
+							sRef = property.Items
+							r.ListMethod = &ListMethod{}
+							found = true
+							break
 						}
+					}
+					if !found {
+						slog.Warn(fmt.Sprintf("resource %q has a LIST method with a response schema, but the items field is not present or is not an array.", path))
 					}
 				}
 			}
@@ -119,7 +131,7 @@ func GetServiceDefinition(api *openapi.OpenAPI, pathPrefix string) (*ServiceDefi
 func (s *ServiceDefinition) GetResource(resource string) (*Resource, error) {
 	r, ok := (*s).Resources[resource]
 	if !ok {
-		return nil, fmt.Errorf("Resource %s not found. Resources available: %v", resource, (*s).Resources)
+		return nil, fmt.Errorf("Resource %s not found.", resource, (*s).Resources)
 	}
 	return r, nil
 }
@@ -133,6 +145,10 @@ type PatternInfo struct {
 // getPatternInfo returns true if the path is an alternating pairing of collection and id,
 // and returns the collection names if so.
 func getPatternInfo(path string) *PatternInfo {
+	if strings.Contains(path, ":") {
+		slog.Debug("path contains colon, custom methods are not currently supported.", "path", path)
+		return nil
+	}
 	// we ignore the first segment, which is empty.
 	pattern := strings.Split(path, "/")[1:]
 	for i, segment := range pattern {
@@ -207,4 +223,17 @@ func foldResourceMethods(from, into *Resource) {
 	if from.DeleteMethod != nil {
 		into.DeleteMethod = from.DeleteMethod
 	}
+}
+
+func dereferencedSchema(schema openapi.Schema, api *openapi.OpenAPI) (*openapi.Schema, error) {
+	if schema.Ref != "" {
+		parts := strings.Split(schema.Ref, "/")
+		key := parts[len(parts)-1]
+		childSchema, ok := api.Components.Schemas[key]
+		if !ok {
+			return nil, fmt.Errorf("schema %q not found", key)
+		}
+		return dereferencedSchema(childSchema, api)
+	}
+	return &schema, nil
 }
