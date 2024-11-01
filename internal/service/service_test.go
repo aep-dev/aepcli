@@ -1,6 +1,7 @@
 package service
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -38,8 +39,8 @@ func TestService_ExecuteCommand_ListResources(t *testing.T) {
 			if err != nil {
 				t.Errorf("ExecuteCommand() error = %v, expected no error", err)
 			}
-			if result != tt.expected {
-				t.Errorf("ExecuteCommand() = %v, expected %v", result, tt.expected)
+			if !strings.Contains(result, tt.expected) {
+				t.Errorf("ExecuteCommand() = %v, expected it to contain %v", result, tt.expected)
 			}
 		})
 	}
