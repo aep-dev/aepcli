@@ -1,0 +1,26 @@
+name: Go Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Run Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.21" # Specify your Go version here
+
+      - name: Install dependencies
+        run: go mod download
+
+      - name: Run tests
+        run: go test -v ./...
