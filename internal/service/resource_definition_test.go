@@ -38,6 +38,11 @@ var projectResource = Resource{
 		},
 		Required: []string{"name"},
 	},
+	GetMethod:    &GetMethod{},
+	ListMethod:   &ListMethod{},
+	CreateMethod: &CreateMethod{},
+	UpdateMethod: &UpdateMethod{},
+	DeleteMethod: &DeleteMethod{},
 }
 
 func TestExecuteCommand(t *testing.T) {
@@ -83,10 +88,16 @@ func TestExecuteCommand(t *testing.T) {
 		{
 			name: "resource with parent",
 			resource: Resource{
-				Singular: "dataset",
-				Plural:   "datasets",
-				Pattern:  []string{"projects", "{project}", "datasets", "{dataset}"},
-				Parents:  []*Resource{&projectResource},
+				Singular:     "dataset",
+				Plural:       "datasets",
+				Pattern:      []string{"projects", "{project}", "datasets", "{dataset}"},
+				Parents:      []*Resource{&projectResource},
+				Schema:       &openapi.Schema{},
+				GetMethod:    &GetMethod{},
+				ListMethod:   &ListMethod{},
+				CreateMethod: &CreateMethod{},
+				UpdateMethod: &UpdateMethod{},
+				DeleteMethod: &DeleteMethod{},
 			},
 			args:           []string{"--project=foo", "get", "abc"},
 			expectedPath:   "projects/foo/datasets/abc",

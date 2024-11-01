@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGetServiceDefinition2(t *testing.T) {
+func TestGetServiceDefinition(t *testing.T) {
 	tests := []struct {
 		name           string
 		api            *openapi.OpenAPI
@@ -23,12 +23,16 @@ func TestGetServiceDefinition2(t *testing.T) {
 						Get: &openapi.Operation{
 							Responses: map[string]openapi.Response{
 								"200": {
-									Schema: &openapi.Schema{
-										Properties: map[string]openapi.Schema{
-											"results": {
-												Type: "array",
-												Items: &openapi.Schema{
-													Ref: "#/components/schemas/Widget",
+									Content: map[string]openapi.MediaType{
+										"application/json": {
+											Schema: &openapi.Schema{
+												Properties: map[string]openapi.Schema{
+													"results": {
+														Type: "array",
+														Items: &openapi.Schema{
+															Ref: "#/components/schemas/Widget",
+														},
+													},
 												},
 											},
 										},
@@ -39,8 +43,12 @@ func TestGetServiceDefinition2(t *testing.T) {
 						Post: &openapi.Operation{
 							Responses: map[string]openapi.Response{
 								"200": {
-									Schema: &openapi.Schema{
-										Ref: "#/components/schemas/Widget",
+									Content: map[string]openapi.MediaType{
+										"application/json": {
+											Schema: &openapi.Schema{
+												Ref: "#/components/schemas/Widget",
+											},
+										},
 									},
 								},
 							},
@@ -50,8 +58,12 @@ func TestGetServiceDefinition2(t *testing.T) {
 						Get: &openapi.Operation{
 							Responses: map[string]openapi.Response{
 								"200": {
-									Schema: &openapi.Schema{
-										Ref: "#/components/schemas/Widget",
+									Content: map[string]openapi.MediaType{
+										"application/json": {
+											Schema: &openapi.Schema{
+												Ref: "#/components/schemas/Widget",
+											},
+										},
 									},
 								},
 							},
@@ -60,8 +72,12 @@ func TestGetServiceDefinition2(t *testing.T) {
 						Patch: &openapi.Operation{
 							Responses: map[string]openapi.Response{
 								"200": {
-									Schema: &openapi.Schema{
-										Ref: "#/components/schemas/Widget",
+									Content: map[string]openapi.MediaType{
+										"application/json": {
+											Schema: &openapi.Schema{
+												Ref: "#/components/schemas/Widget",
+											},
+										},
 									},
 								},
 							},
@@ -103,8 +119,12 @@ func TestGetServiceDefinition2(t *testing.T) {
 						Get: &openapi.Operation{
 							Responses: map[string]openapi.Response{
 								"200": {
-									Schema: &openapi.Schema{
-										Ref: "#/components/schemas/widget",
+									Content: map[string]openapi.MediaType{
+										"application/json": {
+											Schema: &openapi.Schema{
+												Ref: "#/components/schemas/widget",
+											},
+										},
 									},
 								},
 							},
@@ -155,8 +175,12 @@ func TestGetServiceDefinition2(t *testing.T) {
 							},
 							Responses: map[string]openapi.Response{
 								"200": {
-									Schema: &openapi.Schema{
-										Ref: "#/components/schemas/Widget",
+									Content: map[string]openapi.MediaType{
+										"application/json": {
+											Schema: &openapi.Schema{
+												Ref: "#/components/schemas/Widget",
+											},
+										},
 									},
 								},
 							},
@@ -182,7 +206,7 @@ func TestGetServiceDefinition2(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := GetServiceDefinition(tt.api)
+			result, err := GetServiceDefinition(tt.api, "")
 
 			if tt.expectedError != "" {
 				assert.Error(t, err)

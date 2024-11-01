@@ -73,7 +73,7 @@ type RequestBody struct {
 }
 
 type MediaType struct {
-	Schema Schema `json:"schema"`
+	Schema *Schema `json:"schema,omitempty"`
 }
 
 type Schema struct {

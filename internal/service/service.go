@@ -26,10 +26,11 @@ func NewService(serviceDefinition ServiceDefinition, headers map[string]string) 
 	}
 }
 
-func (s *Service) ExecuteCommand(resource string, args []string) (string, error) {
-	if resource == "--help" {
+func (s *Service) ExecuteCommand(args []string) (string, error) {
+	if len(args) == 0 || args[0] == "--help" {
 		return s.ListResources(), nil
 	}
+	resource := args[0]
 	r, err := s.GetResource(resource)
 	if err != nil {
 		return "", fmt.Errorf("%v\n%v", err, s.ListResources())

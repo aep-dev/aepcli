@@ -41,14 +41,14 @@ func GetServiceDefinition(api *openapi.OpenAPI, pathPrefix string) (*ServiceDefi
 			if pathItem.Get != nil {
 				if resp, ok := pathItem.Get.Responses["200"]; ok {
 					ct := resp.Content[contentType]
-					sRef = &ct.Schema
+					sRef = ct.Schema
 					r.GetMethod = &GetMethod{}
 				}
 			}
 			if pathItem.Patch != nil {
 				if resp, ok := pathItem.Patch.Responses["200"]; ok {
 					ct := resp.Content[contentType]
-					sRef = &ct.Schema
+					sRef = ct.Schema
 					r.UpdateMethod = &UpdateMethod{}
 				}
 			}
@@ -58,7 +58,7 @@ func GetServiceDefinition(api *openapi.OpenAPI, pathPrefix string) (*ServiceDefi
 				// check if there is a query parameter "id"
 				if resp, ok := pathItem.Post.Responses["200"]; ok {
 					ct := resp.Content[contentType]
-					sRef = &ct.Schema
+					sRef = ct.Schema
 					supportsUserSettableCreate := false
 					for _, param := range pathItem.Post.Parameters {
 						if param.Name == "id" {
@@ -73,7 +73,7 @@ func GetServiceDefinition(api *openapi.OpenAPI, pathPrefix string) (*ServiceDefi
 			if pathItem.Get != nil {
 				if resp, ok := pathItem.Get.Responses["200"]; ok {
 					ct := resp.Content[contentType]
-					resolvedSchema, err := dereferencedSchema(ct.Schema, api)
+					resolvedSchema, err := dereferencedSchema(*ct.Schema, api)
 					if err != nil {
 						return nil, fmt.Errorf("error dereferencing schema %q: %v", ct.Schema.Ref, err)
 					}
@@ -131,7 +131,7 @@ func GetServiceDefinition(api *openapi.OpenAPI, pathPrefix string) (*ServiceDefi
 func (s *ServiceDefinition) GetResource(resource string) (*Resource, error) {
 	r, ok := (*s).Resources[resource]
 	if !ok {
-		return nil, fmt.Errorf("Resource %s not found.", resource, (*s).Resources)
+		return nil, fmt.Errorf("resource %q not found", resource)
 	}
 	return r, nil
 }

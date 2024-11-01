@@ -15,7 +15,7 @@ import (
 )
 
 func main() {
-	err := aepcli()
+	err := aepcli(os.Args[1:])
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -23,20 +23,20 @@ func main() {
 	os.Exit(0)
 }
 
-func aepcli() error {
+func aepcli(args []string) error {
 	var logLevel string
 	var fileOrAlias string
-	var resource string
 	var additionalArgs []string
 	var s *service.Service
 
 	rootCmd := &cobra.Command{
-		Use:  "aepcli",
-		Args: cobra.ArbitraryArgs,
+		Use:  "aepcli [host or api alias] [resource or --help]",
+		Args: cobra.MinimumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			fileOrAlias = args[0]
-			resource = args[1]
-			additionalArgs = args[2:]
+			if len(args) > 1 {
+				additionalArgs = args[1:]
+			}
 		},
 	}
 
@@ -46,8 +46,8 @@ func aepcli() error {
 	rootCmd.PersistentFlags().StringArrayVar(&rawHeaders, "header", []string{}, "Specify headers in the format key=value")
 	rootCmd.PersistentFlags().StringVar(&logLevel, "log-level", "info", "Set the logging level (debug, info, warn, error)")
 	rootCmd.PersistentFlags().StringVar(&pathPrefix, "path-prefix", "", "Specify a path prefix that is prepended to all paths in the openapi schema. This will strip them when evaluating the resource hierarchy paths.")
-	rootCmd.MarkPersistentFlagRequired("host")
 
+	rootCmd.SetArgs(args)
 	if err := rootCmd.Execute(); err != nil {
 		return err
 	}
@@ -58,8 +58,7 @@ func aepcli() error {
 
 	c, err := config.ReadConfig()
 	if err != nil {
-		fmt.Println(fmt.Errorf("unable to read config: %v", err))
-		os.Exit(1)
+		return fmt.Errorf("unable to read config: %v", err)
 	}
 
 	if api, ok := c.APIs[fileOrAlias]; ok {
@@ -77,26 +76,23 @@ func aepcli() error {
 
 	openapi, err := openapi.FetchOpenAPI(fileOrAlias)
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		return fmt.Errorf("unable to fetch openapi: %w", err)
 	}
 	serviceDefinition, err := service.GetServiceDefinition(openapi, pathPrefix)
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		return fmt.Errorf("unable to get service definition: %w", err)
 	}
 
 	headers, err := parseHeaders(rawHeaders)
 	if err != nil {
-		fmt.Println(fmt.Errorf("unable to parse headers: %w", err))
-		os.Exit(1)
+		return fmt.Errorf("unable to parse headers: %w", err)
 	}
 
 	s = service.NewService(*serviceDefinition, headers)
 
-	result, err := s.ExecuteCommand(resource, additionalArgs)
+	result, err := s.ExecuteCommand(additionalArgs)
 	if err != nil {
-		return err
+		return fmt.Errorf("unable to execute command: %w", err)
 	}
 	fmt.Println(result)
 	return nil
