@@ -131,7 +131,7 @@ func GetServiceDefinition(api *openapi.OpenAPI, pathPrefix string) (*ServiceDefi
 func (s *ServiceDefinition) GetResource(resource string) (*Resource, error) {
 	r, ok := (*s).Resources[resource]
 	if !ok {
-		return nil, fmt.Errorf("resource %q not found", resource)
+		return nil, fmt.Errorf("Resource %s not found.", resource)
 	}
 	return r, nil
 }

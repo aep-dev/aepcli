@@ -28,12 +28,12 @@ func NewService(serviceDefinition ServiceDefinition, headers map[string]string) 
 
 func (s *Service) ExecuteCommand(args []string) (string, error) {
 	if len(args) == 0 || args[0] == "--help" {
-		return s.ListResources(), nil
+		return s.PrintHelp(), nil
 	}
 	resource := args[0]
 	r, err := s.GetResource(resource)
 	if err != nil {
-		return "", fmt.Errorf("%v\n%v", err, s.ListResources())
+		return "", fmt.Errorf("%v\n%v", err, s.PrintHelp())
 	}
 	req, err := r.ExecuteCommand(args)
 	if err != nil {
@@ -82,7 +82,7 @@ func (s *Service) doRequest(r *http.Request) (string, error) {
 	return prettyJSON.String(), nil
 }
 
-func (s *Service) ListResources() string {
+func (s *Service) PrintHelp() string {
 	var resources []string
 	for singular := range s.Resources {
 		resources = append(resources, singular)
@@ -90,6 +90,8 @@ func (s *Service) ListResources() string {
 	sort.Strings(resources)
 
 	var output strings.Builder
+	output.WriteString("Usage: [resource] [method] [flags]\n\n")
+	output.WriteString("Command group for " + s.ServerURL + "\n\n")
 	output.WriteString("Available resources:\n")
 	for _, r := range resources {
 		output.WriteString(fmt.Sprintf("  - %s\n", r))
