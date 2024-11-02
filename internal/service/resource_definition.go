@@ -182,6 +182,10 @@ func addSchemaFlags(c *cobra.Command, schema openapi.Schema, args map[string]int
 			var value int
 			args[name] = &value
 			c.Flags().IntVar(&value, name, 0, fmt.Sprintf("The %v of the resource", name))
+		case "number":
+			var value float64
+			args[name] = &value
+			c.Flags().Float64Var(&value, name, 0, fmt.Sprintf("The %v of the resource", name))
 		case "boolean":
 			var value bool
 			args[name] = &value
