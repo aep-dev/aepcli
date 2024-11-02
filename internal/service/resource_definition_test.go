@@ -109,7 +109,7 @@ func TestExecuteCommand(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req, err := tt.resource.ExecuteCommand(tt.args)
+			req, err, _ := tt.resource.ExecuteCommand(tt.args)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ExecuteCommand() error = %v, wantErr %v", err, tt.wantErr)
 				return

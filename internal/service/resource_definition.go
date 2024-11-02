@@ -40,7 +40,7 @@ type ListMethod struct {
 type DeleteMethod struct {
 }
 
-func (r *Resource) ExecuteCommand(args []string) (*http.Request, error) {
+func (r *Resource) ExecuteCommand(args []string) (*http.Request, error, string) {
 	c := cobra.Command{Use: r.Singular}
 	var err error
 	var req *http.Request
@@ -157,12 +157,15 @@ func (r *Resource) ExecuteCommand(args []string) (*http.Request, error) {
 		}
 		c.AddCommand(listCmd)
 	}
-
+	var stderr strings.Builder
+	var stdout strings.Builder
+	c.SetOut(&stdout)
+	c.SetErr(&stderr)
 	c.SetArgs(args)
 	if err := c.Execute(); err != nil {
-		return nil, err
+		return nil, err, stdout.String() + stderr.String()
 	}
-	return req, err
+	return req, err, stdout.String() + stderr.String()
 }
 
 func addSchemaFlags(c *cobra.Command, schema openapi.Schema, args map[string]interface{}) error {

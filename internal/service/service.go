@@ -35,19 +35,23 @@ func (s *Service) ExecuteCommand(args []string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("%v\n%v", err, s.PrintHelp())
 	}
-	req, err := r.ExecuteCommand(args)
+	req, err, output := r.ExecuteCommand(args[1:])
 	if err != nil {
 		return "", fmt.Errorf("unable to execute command: %v", err)
 	}
 	if req == nil {
-		return "", nil
+		return output, nil
 	}
 	url, err := url.Parse(fmt.Sprintf("%s/%s", s.ServerURL, req.URL.String()))
 	if err != nil {
 		return "", fmt.Errorf("unable to create url: %v", err)
 	}
 	req.URL = url
-	return s.doRequest(req)
+	reqOutput, err := s.doRequest(req)
+	if err != nil {
+		return "", fmt.Errorf("unable to execute request: %v", err)
+	}
+	return strings.Join([]string{output, reqOutput}, "\n"), nil
 }
 
 func (s *Service) doRequest(r *http.Request) (string, error) {
