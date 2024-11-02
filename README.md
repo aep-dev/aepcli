@@ -1,12 +1,37 @@
 # aepcli
-A command-line interface of AEP-compliant APIs.
 
-## Design
+A dynamically generated command-line interface for AEP-compliant APIs.
 
-Aepcli reads an OpenAPI definition, published at a path `/openapi.json`. From
-this definition, resources are read in, and the standards methods they expose.
+## What is aepcli?
+
+aepcli is a command line interface that is able to dynamically generate a CLI
+based on OpenAPI definitions for APIs which adhere to the
+[aeps](https://aep.dev).
+
+For example, if an OpenAPI definition at `./bookstore.yaml` defines a resource
+"Book", that contains create, get, update, and delete methods, aepcli will
+generate the commands `aepcli ./bookstore books create`, `aepcli ./bookstore
+books get`, `aepcli ./bookstore books update`, and `aepcli ./bookstore delete`.
+
+A config file can also be authored, which allows you to use a nice alias instead,
+making your command line look a bit more official:
+
+`aepcli bookstore books create peter-pan --title="Peter Pan"`.
+
+It is useful for the following reasons:
+
+- It provides a highly functional CLI without the need to manually write one
+  yourself.
+- Since the definitions are all openapi files, they can be easily shared and
+  reused. An update for your command-line interface is just copying an openapi
+  file (and any relevant configuration).
+- Since the schema is separate from the binary, new commands can be added
+  without having to update the binary, and new binary updates can happen without
+  modifying the schema.
 
 ## Usage Guide
+
+For a more complete guide, see the [user guide](docs/userguide.md).
 
 ### All commands
 
