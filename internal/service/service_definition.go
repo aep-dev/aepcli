@@ -9,8 +9,6 @@ import (
 	"github.com/aep-dev/aepcli/internal/utils"
 )
 
-const contentType = "application/json"
-
 type ServiceDefinition struct {
 	ServerURL string
 	Resources map[string]*Resource
@@ -18,7 +16,6 @@ type ServiceDefinition struct {
 
 func GetServiceDefinition(api *openapi.OpenAPI, serverURL, pathPrefix string) (*ServiceDefinition, error) {
 	slog.Debug("parsing openapi", "pathPrefix", pathPrefix)
-	oasVersion := api.Info.Version
 	resourceBySingular := make(map[string]*Resource)
 	// we try to parse the paths to find possible resources, since
 	// they may not always be annotated as such.
@@ -40,13 +37,13 @@ func GetServiceDefinition(api *openapi.OpenAPI, serverURL, pathPrefix string) (*
 			}
 			if pathItem.Get != nil {
 				if resp, ok := pathItem.Get.Responses["200"]; ok {
-					sRef = getSchemaFromResponse(resp, oasVersion)
+					sRef = api.GetSchemaFromResponse(resp)
 					r.GetMethod = &GetMethod{}
 				}
 			}
 			if pathItem.Patch != nil {
 				if resp, ok := pathItem.Patch.Responses["200"]; ok {
-					sRef = getSchemaFromResponse(resp, oasVersion)
+					sRef = api.GetSchemaFromResponse(resp)
 					r.UpdateMethod = &UpdateMethod{}
 				}
 			}
@@ -55,7 +52,7 @@ func GetServiceDefinition(api *openapi.OpenAPI, serverURL, pathPrefix string) (*
 			if pathItem.Post != nil {
 				// check if there is a query parameter "id"
 				if resp, ok := pathItem.Post.Responses["200"]; ok {
-					sRef = getSchemaFromResponse(resp, oasVersion)
+					sRef = api.GetSchemaFromResponse(resp)
 					supportsUserSettableCreate := false
 					for _, param := range pathItem.Post.Parameters {
 						if param.Name == "id" {
@@ -69,23 +66,26 @@ func GetServiceDefinition(api *openapi.OpenAPI, serverURL, pathPrefix string) (*
 			// list method
 			if pathItem.Get != nil {
 				if resp, ok := pathItem.Get.Responses["200"]; ok {
-					ct := resp.Content[contentType]
-					respSchema := getSchemaFromResponse(resp, oasVersion)
-					resolvedSchema, err := dereferencedSchema(*respSchema, api)
-					if err != nil {
-						return nil, fmt.Errorf("error dereferencing schema %q: %v", ct.Schema.Ref, err)
-					}
-					found := false
-					for _, property := range resolvedSchema.Properties {
-						if property.Type == "array" {
-							sRef = property.Items
-							r.ListMethod = &ListMethod{}
-							found = true
-							break
+					respSchema := api.GetSchemaFromResponse(resp)
+					if respSchema == nil {
+						slog.Warn(fmt.Sprintf("resource %q has a LIST method with a response schema, but the response schema is nil.", path))
+					} else {
+						resolvedSchema, err := api.DereferenceSchema(*respSchema)
+						if err != nil {
+							return nil, fmt.Errorf("error dereferencing schema %q: %v", respSchema.Ref, err)
 						}
-					}
-					if !found {
-						slog.Warn(fmt.Sprintf("resource %q has a LIST method with a response schema, but the items field is not present or is not an array.", path))
+						found := false
+						for _, property := range resolvedSchema.Properties {
+							if property.Type == "array" {
+								sRef = property.Items
+								r.ListMethod = &ListMethod{}
+								found = true
+								break
+							}
+						}
+						if !found {
+							slog.Warn(fmt.Sprintf("resource %q has a LIST method with a response schema, but the items field is not present or is not an array.", path))
+						}
 					}
 				}
 			}
@@ -94,9 +94,9 @@ func GetServiceDefinition(api *openapi.OpenAPI, serverURL, pathPrefix string) (*
 			// s should always be a reference to a schema in the components section.
 			parts := strings.Split(sRef.Ref, "/")
 			key := parts[len(parts)-1]
-			schema, ok := api.Components.Schemas[key]
-			if !ok {
-				return nil, fmt.Errorf("schema %q not found", key)
+			dereferencedSchema, err := api.DereferenceSchema(*sRef)
+			if err != nil {
+				return nil, fmt.Errorf("error dereferencing schema %q: %v", sRef.Ref, err)
 			}
 			singular := utils.PascalCaseToKebabCase(key)
 			pattern := strings.Split(path, "/")[1:]
@@ -104,7 +104,7 @@ func GetServiceDefinition(api *openapi.OpenAPI, serverURL, pathPrefix string) (*
 			if !p.IsResourcePattern {
 				pattern = append(pattern, fmt.Sprintf("{%s}", singular))
 			}
-			r2, err := getOrPopulateResource(singular, pattern, &schema, resourceBySingular, api)
+			r2, err := getOrPopulateResource(singular, pattern, dereferencedSchema, resourceBySingular, api)
 			if err != nil {
 				return nil, fmt.Errorf("error populating resource %q: %v", r.Singular, err)
 			}
@@ -222,28 +222,5 @@ func foldResourceMethods(from, into *Resource) {
 	}
 	if from.DeleteMethod != nil {
 		into.DeleteMethod = from.DeleteMethod
-	}
-}
-
-func dereferencedSchema(schema openapi.Schema, api *openapi.OpenAPI) (*openapi.Schema, error) {
-	if schema.Ref != "" {
-		parts := strings.Split(schema.Ref, "/")
-		key := parts[len(parts)-1]
-		childSchema, ok := api.Components.Schemas[key]
-		if !ok {
-			return nil, fmt.Errorf("schema %q not found", key)
-		}
-		return dereferencedSchema(childSchema, api)
-	}
-	return &schema, nil
-}
-
-func getSchemaFromResponse(r openapi.Response, oasVersion string) *openapi.Schema {
-	switch oasVersion {
-	case "2.0":
-		return r.Schema
-	default:
-		ct := r.Content[contentType]
-		return ct.Schema
 	}
 }

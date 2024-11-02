@@ -4,17 +4,70 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
+)
+
+const (
+	OAS2        = "2.0"
+	OAS3        = "3.0"
+	ContentType = "application/json"
 )
 
 type OpenAPI struct {
-	Openapi    string              `json:"openapi"`
+	// oas 2.0 has swagger in the root.k
+	Swagger    string              `json:"swagger,omitempty"`
+	Openapi    string              `json:"openapi,omitempty"`
 	Servers    []Server            `json:"servers,omitempty"`
 	Info       Info                `json:"info"`
 	Paths      map[string]PathItem `json:"paths"`
-	Components Components          `json:"components"`
+	Components Components          `json:"components,omitempty"`
+	// oas 2.0 has definitions in the root.
+	Definitions map[string]Schema `json:"definitions,omitempty"`
+}
+
+func (o *OpenAPI) OASVersion() string {
+	if o.Swagger == "2.0" {
+		return OAS2
+	}
+	return OAS3
+}
+
+func (o *OpenAPI) DereferenceSchema(schema Schema) (*Schema, error) {
+	if schema.Ref != "" {
+		parts := strings.Split(schema.Ref, "/")
+		key := parts[len(parts)-1]
+		var childSchema Schema
+		var ok bool
+		switch o.OASVersion() {
+		case OAS2:
+			childSchema, ok = o.Definitions[key]
+			slog.Debug("oasv2.0", "key", key)
+			if !ok {
+				return nil, fmt.Errorf("schema %q not found", schema.Ref)
+			}
+		default:
+			childSchema, ok = o.Components.Schemas[key]
+			if !ok {
+				return nil, fmt.Errorf("schema %q not found", schema.Ref)
+			}
+		}
+		return o.DereferenceSchema(childSchema)
+	}
+	return &schema, nil
+}
+
+func (o *OpenAPI) GetSchemaFromResponse(r Response) *Schema {
+	switch o.OASVersion() {
+	case OAS2:
+		return r.Schema
+	default:
+		ct := r.Content[ContentType]
+		return ct.Schema
+	}
 }
 
 type Server struct {

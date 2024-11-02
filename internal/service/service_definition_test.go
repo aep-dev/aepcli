@@ -217,7 +217,7 @@ func TestGetServiceDefinition(t *testing.T) {
 		{
 			name: "OAS 2.0 style schema in response",
 			api: &openapi.OpenAPI{
-				Info:    openapi.Info{Version: "2.0"},
+				Swagger: "2.0",
 				Servers: []openapi.Server{{URL: "https://api.example.com"}},
 				Paths: map[string]openapi.PathItem{
 					"/widgets/{widget}": {
@@ -225,20 +225,18 @@ func TestGetServiceDefinition(t *testing.T) {
 							Responses: map[string]openapi.Response{
 								"200": {
 									Schema: &openapi.Schema{
-										Ref: "#/components/schemas/Widget",
+										Ref: "#/definitions/Widget",
 									},
 								},
 							},
 						},
 					},
 				},
-				Components: openapi.Components{
-					Schemas: map[string]openapi.Schema{
-						"Widget": {
-							Type: "object",
-							Properties: map[string]openapi.Schema{
-								"name": {Type: "string"},
-							},
+				Definitions: map[string]openapi.Schema{
+					"Widget": {
+						Type: "object",
+						Properties: map[string]openapi.Schema{
+							"name": {Type: "string"},
 						},
 					},
 				},
