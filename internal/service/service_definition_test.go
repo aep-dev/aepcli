@@ -202,6 +202,42 @@ func TestGetServiceDefinition(t *testing.T) {
 					"should support user-settable create")
 			},
 		},
+		{
+			name: "OAS 2.0 style schema in response",
+			api: &openapi.OpenAPI{
+				Info:    openapi.Info{Version: "2.0"},
+				Servers: []openapi.Server{{URL: "https://api.example.com"}},
+				Paths: map[string]openapi.PathItem{
+					"/widgets/{widget}": {
+						Get: &openapi.Operation{
+							Responses: map[string]openapi.Response{
+								"200": {
+									Schema: &openapi.Schema{
+										Ref: "#/components/schemas/Widget",
+									},
+								},
+							},
+						},
+					},
+				},
+				Components: openapi.Components{
+					Schemas: map[string]openapi.Schema{
+						"Widget": {
+							Type: "object",
+							Properties: map[string]openapi.Schema{
+								"name": {Type: "string"},
+							},
+						},
+					},
+				},
+			},
+			validateResult: func(t *testing.T, sd *ServiceDefinition) {
+				widget, ok := sd.Resources["widget"]
+				assert.True(t, ok, "widget resource should exist")
+				assert.NotNil(t, widget.GetMethod, "should have GET method")
+				assert.Equal(t, []string{"widgets", "{widget}"}, widget.Pattern)
+			},
+		},
 	}
 
 	for _, tt := range tests {

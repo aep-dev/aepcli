@@ -63,6 +63,8 @@ type Parameter struct {
 type Response struct {
 	Description string               `json:"description"`
 	Content     map[string]MediaType `json:"content"`
+	// oas 2.0 has the schema in the response.
+	Schema *Schema `json:"schema,omitempty"`
 }
 
 type RequestBody struct {

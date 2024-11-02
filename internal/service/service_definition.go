@@ -19,6 +19,7 @@ type ServiceDefinition struct {
 
 func GetServiceDefinition(api *openapi.OpenAPI, pathPrefix string) (*ServiceDefinition, error) {
 	slog.Debug("parsing openapi", "pathPrefix", pathPrefix)
+	oasVersion := api.Info.Version
 	resourceBySingular := make(map[string]*Resource)
 	// we try to parse the paths to find possible resources, since
 	// they may not always be annotated as such.
@@ -40,15 +41,13 @@ func GetServiceDefinition(api *openapi.OpenAPI, pathPrefix string) (*ServiceDefi
 			}
 			if pathItem.Get != nil {
 				if resp, ok := pathItem.Get.Responses["200"]; ok {
-					ct := resp.Content[contentType]
-					sRef = ct.Schema
+					sRef = getSchemaFromResponse(resp, oasVersion)
 					r.GetMethod = &GetMethod{}
 				}
 			}
 			if pathItem.Patch != nil {
 				if resp, ok := pathItem.Patch.Responses["200"]; ok {
-					ct := resp.Content[contentType]
-					sRef = ct.Schema
+					sRef = getSchemaFromResponse(resp, oasVersion)
 					r.UpdateMethod = &UpdateMethod{}
 				}
 			}
@@ -57,8 +56,7 @@ func GetServiceDefinition(api *openapi.OpenAPI, pathPrefix string) (*ServiceDefi
 			if pathItem.Post != nil {
 				// check if there is a query parameter "id"
 				if resp, ok := pathItem.Post.Responses["200"]; ok {
-					ct := resp.Content[contentType]
-					sRef = ct.Schema
+					sRef = getSchemaFromResponse(resp, oasVersion)
 					supportsUserSettableCreate := false
 					for _, param := range pathItem.Post.Parameters {
 						if param.Name == "id" {
@@ -73,7 +71,8 @@ func GetServiceDefinition(api *openapi.OpenAPI, pathPrefix string) (*ServiceDefi
 			if pathItem.Get != nil {
 				if resp, ok := pathItem.Get.Responses["200"]; ok {
 					ct := resp.Content[contentType]
-					resolvedSchema, err := dereferencedSchema(*ct.Schema, api)
+					respSchema := getSchemaFromResponse(resp, oasVersion)
+					resolvedSchema, err := dereferencedSchema(*respSchema, api)
 					if err != nil {
 						return nil, fmt.Errorf("error dereferencing schema %q: %v", ct.Schema.Ref, err)
 					}
@@ -236,4 +235,14 @@ func dereferencedSchema(schema openapi.Schema, api *openapi.OpenAPI) (*openapi.S
 		return dereferencedSchema(childSchema, api)
 	}
 	return &schema, nil
+}
+
+func getSchemaFromResponse(r openapi.Response, oasVersion string) *openapi.Schema {
+	switch oasVersion {
+	case "2.0":
+		return r.Schema
+	default:
+		ct := r.Content[contentType]
+		return ct.Schema
+	}
 }
