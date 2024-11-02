@@ -15,6 +15,7 @@ type Config struct {
 type API struct {
 	Name        string
 	OpenAPIPath string
+	ServerURL   string
 	Headers     []string
 	PathPrefix  string
 }

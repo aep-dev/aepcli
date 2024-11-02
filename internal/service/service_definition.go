@@ -1,7 +1,6 @@
 package service
 
 import (
-	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -17,7 +16,7 @@ type ServiceDefinition struct {
 	Resources map[string]*Resource
 }
 
-func GetServiceDefinition(api *openapi.OpenAPI, pathPrefix string) (*ServiceDefinition, error) {
+func GetServiceDefinition(api *openapi.OpenAPI, serverURL, pathPrefix string) (*ServiceDefinition, error) {
 	slog.Debug("parsing openapi", "pathPrefix", pathPrefix)
 	oasVersion := api.Info.Version
 	resourceBySingular := make(map[string]*Resource)
@@ -113,12 +112,14 @@ func GetServiceDefinition(api *openapi.OpenAPI, pathPrefix string) (*ServiceDefi
 		}
 	}
 	// get the first serverURL url
-	serverURL := ""
-	for _, s := range api.Servers {
-		serverURL = s.URL + pathPrefix
-	}
 	if serverURL == "" {
-		return nil, errors.New("no servers found in the OpenAPI definition. Cannot find a server to send a request to")
+		for _, s := range api.Servers {
+			serverURL = s.URL + pathPrefix
+		}
+	}
+
+	if serverURL == "" {
+		return nil, fmt.Errorf("no server URL found in openapi, and none was provided")
 	}
 
 	return &ServiceDefinition{
@@ -130,7 +131,7 @@ func GetServiceDefinition(api *openapi.OpenAPI, pathPrefix string) (*ServiceDefi
 func (s *ServiceDefinition) GetResource(resource string) (*Resource, error) {
 	r, ok := (*s).Resources[resource]
 	if !ok {
-		return nil, fmt.Errorf("Resource %s not found.", resource)
+		return nil, fmt.Errorf("Resource %s not found", resource)
 	}
 	return r, nil
 }

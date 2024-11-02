@@ -42,10 +42,12 @@ func aepcli(args []string) error {
 
 	var rawHeaders []string
 	var pathPrefix string
+	var serverURL string
 	rootCmd.Flags().SetInterspersed(false) // allow sub parsers to parse subsequent flags after the resource
 	rootCmd.PersistentFlags().StringArrayVar(&rawHeaders, "header", []string{}, "Specify headers in the format key=value")
 	rootCmd.PersistentFlags().StringVar(&logLevel, "log-level", "info", "Set the logging level (debug, info, warn, error)")
 	rootCmd.PersistentFlags().StringVar(&pathPrefix, "path-prefix", "", "Specify a path prefix that is prepended to all paths in the openapi schema. This will strip them when evaluating the resource hierarchy paths.")
+	rootCmd.PersistentFlags().StringVar(&serverURL, "server-url", "", "Specify a URL to use for the server. If not specified, the first server URL in the OpenAPI definition will be used.")
 
 	rootCmd.SetArgs(args)
 	if err := rootCmd.Execute(); err != nil {
@@ -72,13 +74,14 @@ func aepcli(args []string) error {
 			pathPrefix = api.PathPrefix
 		}
 		rawHeaders = append(rawHeaders, api.Headers...)
+		serverURL = api.ServerURL
 	}
 
 	openapi, err := openapi.FetchOpenAPI(fileOrAlias)
 	if err != nil {
 		return fmt.Errorf("unable to fetch openapi: %w", err)
 	}
-	serviceDefinition, err := service.GetServiceDefinition(openapi, pathPrefix)
+	serviceDefinition, err := service.GetServiceDefinition(openapi, serverURL, pathPrefix)
 	if err != nil {
 		return fmt.Errorf("unable to get service definition: %w", err)
 	}

@@ -7,100 +7,104 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGetServiceDefinition(t *testing.T) {
-	tests := []struct {
-		name           string
-		api            *openapi.OpenAPI
-		expectedError  string
-		validateResult func(*testing.T, *ServiceDefinition)
-	}{
-		{
-			name: "basic resource with CRUD operations",
-			api: &openapi.OpenAPI{
-				Servers: []openapi.Server{{URL: "https://api.example.com"}},
-				Paths: map[string]openapi.PathItem{
-					"/widgets": {
-						Get: &openapi.Operation{
-							Responses: map[string]openapi.Response{
-								"200": {
-									Content: map[string]openapi.MediaType{
-										"application/json": {
-											Schema: &openapi.Schema{
-												Properties: map[string]openapi.Schema{
-													"results": {
-														Type: "array",
-														Items: &openapi.Schema{
-															Ref: "#/components/schemas/Widget",
-														},
-													},
-												},
-											},
-										},
-									},
-								},
-							},
-						},
-						Post: &openapi.Operation{
-							Responses: map[string]openapi.Response{
-								"200": {
-									Content: map[string]openapi.MediaType{
-										"application/json": {
-											Schema: &openapi.Schema{
+var basicOpenAPI = &openapi.OpenAPI{
+	Servers: []openapi.Server{{URL: "https://api.example.com"}},
+	Paths: map[string]openapi.PathItem{
+		"/widgets": {
+			Get: &openapi.Operation{
+				Responses: map[string]openapi.Response{
+					"200": {
+						Content: map[string]openapi.MediaType{
+							"application/json": {
+								Schema: &openapi.Schema{
+									Properties: map[string]openapi.Schema{
+										"results": {
+											Type: "array",
+											Items: &openapi.Schema{
 												Ref: "#/components/schemas/Widget",
 											},
 										},
 									},
 								},
-							},
-						},
-					},
-					"/widgets/{widget}": {
-						Get: &openapi.Operation{
-							Responses: map[string]openapi.Response{
-								"200": {
-									Content: map[string]openapi.MediaType{
-										"application/json": {
-											Schema: &openapi.Schema{
-												Ref: "#/components/schemas/Widget",
-											},
-										},
-									},
-								},
-							},
-						},
-						Delete: &openapi.Operation{},
-						Patch: &openapi.Operation{
-							Responses: map[string]openapi.Response{
-								"200": {
-									Content: map[string]openapi.MediaType{
-										"application/json": {
-											Schema: &openapi.Schema{
-												Ref: "#/components/schemas/Widget",
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-				Components: openapi.Components{
-					Schemas: map[string]openapi.Schema{
-						"Widget": {
-							Type: "object",
-							Properties: map[string]openapi.Schema{
-								"name": {Type: "string"},
 							},
 						},
 					},
 				},
 			},
+			Post: &openapi.Operation{
+				Responses: map[string]openapi.Response{
+					"200": {
+						Content: map[string]openapi.MediaType{
+							"application/json": {
+								Schema: &openapi.Schema{
+									Ref: "#/components/schemas/Widget",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		"/widgets/{widget}": {
+			Get: &openapi.Operation{
+				Responses: map[string]openapi.Response{
+					"200": {
+						Content: map[string]openapi.MediaType{
+							"application/json": {
+								Schema: &openapi.Schema{
+									Ref: "#/components/schemas/Widget",
+								},
+							},
+						},
+					},
+				},
+			},
+			Delete: &openapi.Operation{},
+			Patch: &openapi.Operation{
+				Responses: map[string]openapi.Response{
+					"200": {
+						Content: map[string]openapi.MediaType{
+							"application/json": {
+								Schema: &openapi.Schema{
+									Ref: "#/components/schemas/Widget",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	},
+	Components: openapi.Components{
+		Schemas: map[string]openapi.Schema{
+			"Widget": {
+				Type: "object",
+				Properties: map[string]openapi.Schema{
+					"name": {Type: "string"},
+				},
+			},
+		},
+	},
+}
+
+func TestGetServiceDefinition(t *testing.T) {
+	tests := []struct {
+		name           string
+		api            *openapi.OpenAPI
+		serverURL      string
+		expectedError  string
+		validateResult func(*testing.T, *ServiceDefinition)
+	}{
+		{
+			name: "basic resource with CRUD operations",
+			api:  basicOpenAPI,
 			validateResult: func(t *testing.T, sd *ServiceDefinition) {
 				assert.Equal(t, "https://api.example.com", sd.ServerURL)
 
 				widget, ok := sd.Resources["widget"]
 				assert.True(t, ok, "widget resource should exist")
 				assert.Equal(t, widget.Pattern, []string{"widgets", "{widget}"})
+				assert.Equal(t, sd.ServerURL, "https://api.example.com")
 				assert.NotNil(t, widget.GetMethod, "should have GET method")
 				assert.NotNil(t, widget.ListMethod, "should have LIST method")
 				assert.NotNil(t, widget.CreateMethod, "should have CREATE method")
@@ -109,6 +113,14 @@ func TestGetServiceDefinition(t *testing.T) {
 				}
 				assert.NotNil(t, widget.UpdateMethod, "should have UPDATE method")
 				assert.NotNil(t, widget.DeleteMethod, "should have DELETE method")
+			},
+		},
+		{
+			name:      "empty openapi with server url override",
+			api:       basicOpenAPI,
+			serverURL: "https://override.example.com",
+			validateResult: func(t *testing.T, sd *ServiceDefinition) {
+				assert.Equal(t, "https://override.example.com", sd.ServerURL)
 			},
 		},
 		{
@@ -161,7 +173,7 @@ func TestGetServiceDefinition(t *testing.T) {
 			api: &openapi.OpenAPI{
 				Servers: []openapi.Server{},
 			},
-			expectedError: "no servers found in the OpenAPI definition",
+			expectedError: "no server URL found in openapi, and none was provided",
 		},
 		{
 			name: "resource with user-settable create ID",
@@ -242,7 +254,7 @@ func TestGetServiceDefinition(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := GetServiceDefinition(tt.api, "")
+			result, err := GetServiceDefinition(tt.api, tt.serverURL, "")
 
 			if tt.expectedError != "" {
 				assert.Error(t, err)
