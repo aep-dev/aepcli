@@ -103,8 +103,19 @@ headers = ["X-API-TOKEN=123", "X-API-CLIENT=aepcli"]
 ```
 
 If you would like to use aepcli as your recommend command-line interface for
-your API, you can provide a simple script to write the appropriate configuration
-to your configuration file.
+your API, you can provide a one-liner to add the configuration to your
+configuration file:
+
+```bash
+aepcli core config add bookstore --openapi-path=$HOME/workspace/aepc/example/bookstore/v1/bookstore_openapi.json
+```
+
+You can also list and read all of the configurations you have added:
+
+```bash
+aepcli core config list
+aepcli core config get bookstore
+```
 
 ### specifying resource parent ids
 
@@ -166,6 +177,10 @@ lists are specified as a comma-separated list:
 ```bash
 aepcli bookstore book-edition create --book "peter-pan" --publisher "consistent-house" --tags "fantasy,childrens"
 ```
+
+### core commands
+
+See `aepcli core --help` for commands for aepcli (e.g. config)
 
 ## OpenAPI Definitions
 
