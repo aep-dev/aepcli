@@ -29,95 +29,27 @@ It is useful for the following reasons:
   without having to update the binary, and new binary updates can happen without
   modifying the schema.
 
+## Installation
+
+To install the binary, download it from the [releases page](https://github.com/aep-dev/aepcli/releases).
+
+Alternatively, you can install it using `go install github.com/aep-dev/aepcli/cmd/aepcli@latest`.
+
 ## Usage Guide
 
-For a more complete guide, see the [user guide](docs/userguide.md).
+See the [user guide](docs/userguide.md).
 
-### All commands
+## List of APIs supported by aepcli
 
-All commands require the address of the host they are requesting. Therefore all
-commands require passing in the server:
+The following is a list of APIs that aepcli has been tested against. An entry is
+this list does not imply official support from the organization hosting the API,
+and is not comprehensive. If you have an API that you would like to add to the
+list, please open an issue or submit a PR!
 
-```bash
-aepcli --openapi-file=https://bookstore.example.com/openapi.json
-```
-
-### List resources
-
-```bash
-aepcli --openapi-file=https://bookstore.example.com/openapi.json publishers list
-```
-
-### Get a resource
-
-```bash
-aepcli --openapi-file=https://bookstore.example.com/openapi.json publishers get peter-pan
-```
-
-### Update a resource
-
-```bash
-aepcli roblox universes update ${UNIVERSE_ID} --displayName=foo
-```
-
-### Subresources
-
-Sometimes, a resource is a child of another resource (e.g. a book is listed under a publiher).
-
-aepcli has support for this as well:
-
-```bash
-aepcli "https://bookstore.example.com/openapi.json" books --publisher="orderly-home" get peter-pan
-```
-
-### Storing API configuration
-
-API configuration can be stored in a config file, as it can be cumbersome to write
-out the openapi file path and headers every time you want to authenticate with
-an API.
-
-Write the following to `$HOME/.config/aepcli/config.toml`:
-
-```toml
-[apis.${NAME}]
-openapipath = PATH_TO_OPENAPI
-# add any authentication headers.
-headers = []
-```
-
-For example, to add support for the roblox API, it may look like:
-
-```
-[apis.roblox]
-openapipath = "roblox_openapi.json" # add the roblox_openapi.json in the ~/.config/aepcli/ directory.
-headers = [
-    "x-api-key=${ROBLOX_API_KEY}" # add your api key here.
-]
-```
-
-From that point on, you may refer to that API via:
-
-```
-aepcli ${NAME} # e.g. aepcli roblox
-```
-
-## Real-life demo: the Roblox API
-
-Although the Roblox [Open Cloud v2
-API](https://create.roblox.com/docs/cloud/reference) is not officially AEP
-compliant, it adheres to many of the same practices, and serves as a practical
-example of using aepcli.
-
-
+[Roblox](https://create.roblox.com/docs/cloud/reference):
 
 ```bash
 export ROBLOX_API_KEY=YOUR_KEY_HERE
-aepcli --openapi-file=./examples/roblox_openapi.json --header "x-api-key: ${ROBLOX_API_KEY}" users get 123
+aepcli core config add roblox --openapi-path=https://raw.githubusercontent.com/Roblox/creator-docs/refs/heads/main/content/en-us/reference/cloud/cloud.docs.json --path-prefix=/cloud/v2 --server-url=https://apis.roblox.com --headers="x-api-key=${ROBLOX_API_KEY}"
+aepcli roblox users get ${USER_ID}
 ```
-
-Or if you add the config:
-
-```bash
-aepcli roblox users get 123
-```
-
