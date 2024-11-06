@@ -35,7 +35,7 @@ func (s *Service) ExecuteCommand(args []string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("%v\n%v", err, s.PrintHelp())
 	}
-	req, err, output := r.ExecuteCommand(args[1:])
+	req, output, err := r.ExecuteCommand(args[1:])
 	if err != nil {
 		return "", fmt.Errorf("unable to execute command: %v", err)
 	}

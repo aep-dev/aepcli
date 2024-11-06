@@ -17,6 +17,7 @@ type ServiceDefinition struct {
 func GetServiceDefinition(api *openapi.OpenAPI, serverURL, pathPrefix string) (*ServiceDefinition, error) {
 	slog.Debug("parsing openapi", "pathPrefix", pathPrefix)
 	resourceBySingular := make(map[string]*Resource)
+	customMethodsByPattern := make(map[string][]*CustomMethod)
 	// we try to parse the paths to find possible resources, since
 	// they may not always be annotated as such.
 	for path, pathItem := range api.Paths {
@@ -30,7 +31,55 @@ func GetServiceDefinition(api *openapi.OpenAPI, serverURL, pathPrefix string) (*
 			continue
 		}
 		slog.Debug("parsing path for resource", "path", path)
-		if p.IsResourcePattern {
+		if p.CustomMethodName != "" && p.IsResourcePattern {
+			// strip the leading slash and the custom method suffix
+			pattern := strings.Split(path, ":")[0][1:]
+			if _, ok := customMethodsByPattern[pattern]; !ok {
+				customMethodsByPattern[pattern] = []*CustomMethod{}
+			}
+			if pathItem.Post != nil {
+				if resp, ok := pathItem.Post.Responses["200"]; ok {
+					schema := api.GetSchemaFromResponse(resp)
+					responseSchema := &openapi.Schema{}
+					if schema != nil {
+						var err error
+						responseSchema, err = api.DereferenceSchema(*schema)
+						if err != nil {
+							return nil, fmt.Errorf("error dereferencing schema %v: %v", schema, err)
+						}
+					}
+					schema = api.GetSchemaFromRequestBody(*pathItem.Post.RequestBody)
+					requestSchema, err := api.DereferenceSchema(*schema)
+					if err != nil {
+						return nil, fmt.Errorf("error dereferencing schema %q: %v", schema.Ref, err)
+					}
+					customMethodsByPattern[pattern] = append(customMethodsByPattern[pattern], &CustomMethod{
+						Name:     p.CustomMethodName,
+						Method:   "POST",
+						Request:  requestSchema,
+						Response: responseSchema,
+					})
+				}
+			}
+			if pathItem.Get != nil {
+				if resp, ok := pathItem.Get.Responses["200"]; ok {
+					schema := api.GetSchemaFromResponse(resp)
+					responseSchema := &openapi.Schema{}
+					if schema != nil {
+						var err error
+						responseSchema, err = api.DereferenceSchema(*schema)
+						if err != nil {
+							return nil, fmt.Errorf("error dereferencing schema %v: %v", schema.Ref, err)
+						}
+					}
+					customMethodsByPattern[pattern] = append(r.CustomMethods, &CustomMethod{
+						Name:     p.CustomMethodName,
+						Method:   "GET",
+						Response: responseSchema,
+					})
+				}
+			}
+		} else if p.IsResourcePattern {
 			// treat it like a collection pattern (update, delete, get)
 			if pathItem.Delete != nil {
 				r.DeleteMethod = &DeleteMethod{}
@@ -100,9 +149,18 @@ func GetServiceDefinition(api *openapi.OpenAPI, serverURL, pathPrefix string) (*
 			}
 			singular := utils.PascalCaseToKebabCase(key)
 			pattern := strings.Split(path, "/")[1:]
-			// collection-level patterns don't include the singular, so we need to add it
 			if !p.IsResourcePattern {
-				pattern = append(pattern, fmt.Sprintf("{%s}", singular))
+				// deduplicate the singular, if applicable
+				finalSingular := singular
+				parent := ""
+				if len(pattern) >= 3 {
+					parent = pattern[len(pattern)-3]
+					parent = parent[0 : len(parent)-1] // strip curly surrounding
+					if strings.HasPrefix(singular, parent) {
+						finalSingular = strings.TrimPrefix(singular, parent+"-")
+					}
+				}
+				pattern = append(pattern, fmt.Sprintf("{%s}", finalSingular))
 			}
 			r2, err := getOrPopulateResource(singular, pattern, dereferencedSchema, resourceBySingular, api)
 			if err != nil {
@@ -111,7 +169,24 @@ func GetServiceDefinition(api *openapi.OpenAPI, serverURL, pathPrefix string) (*
 			foldResourceMethods(&r, r2)
 		}
 	}
-	// get the first serverURL url
+	// the custom methods are trickier - because they may not respond with the schema of the resource
+	// (which would allow us to map the resource via looking at it's reference), we instead will have to
+	// map it by the pattern.
+	// we also have to do this by longest pattern match - this helps account for situations where
+	// the custom method doesn't match the resource pattern exactly with things like deduping.
+	for pattern, customMethods := range customMethodsByPattern {
+		found := false
+		for _, r := range resourceBySingular {
+			if r.GetPattern() == pattern {
+				r.CustomMethods = customMethods
+				found = true
+				break
+			}
+		}
+		if !found {
+			slog.Debug(fmt.Sprintf("custom methods with pattern %q have no resource associated with it", pattern))
+		}
+	}
 	if serverURL == "" {
 		for _, s := range api.Servers {
 			serverURL = s.URL + pathPrefix
@@ -140,14 +215,17 @@ type PatternInfo struct {
 	// if true, the pattern represents an individual resource,
 	// otherwise it represents a path to a collection of resources
 	IsResourcePattern bool
+	CustomMethodName  string
 }
 
 // getPatternInfo returns true if the path is an alternating pairing of collection and id,
 // and returns the collection names if so.
 func getPatternInfo(path string) *PatternInfo {
+	customMethodName := ""
 	if strings.Contains(path, ":") {
-		slog.Debug("path contains colon, custom methods are not currently supported.", "path", path)
-		return nil
+		parts := strings.Split(path, ":")
+		path = parts[0]
+		customMethodName = parts[1]
 	}
 	// we ignore the first segment, which is empty.
 	pattern := strings.Split(path, "/")[1:]
@@ -161,6 +239,7 @@ func getPatternInfo(path string) *PatternInfo {
 	}
 	return &PatternInfo{
 		IsResourcePattern: len(pattern)%2 == 0,
+		CustomMethodName:  customMethodName,
 	}
 }
 
@@ -184,23 +263,23 @@ func getOrPopulateResource(singular string, pattern []string, s *openapi.Schema,
 			}
 			parentResource, err := getOrPopulateResource(parentSingular, []string{}, &parentSchema, resourceBySingular, api)
 			if err != nil {
-				return nil, fmt.Errorf("error parsing resource %q parent %q: %v", r.Singular, parentSingular, err)
+				return nil, fmt.Errorf("error parsing resource %q parent %q: %v", singular, parentSingular, err)
 			}
 			parents = append(parents, parentResource)
 		}
 		r = &Resource{
-			Singular: s.XAEPResource.Singular,
-			Plural:   s.XAEPResource.Plural,
-			Parents:  parents,
-			Pattern:  strings.Split(s.XAEPResource.Patterns[0], "/")[1:],
-			Schema:   s,
+			Singular:     s.XAEPResource.Singular,
+			Plural:       s.XAEPResource.Plural,
+			Parents:      parents,
+			PatternElems: strings.Split(s.XAEPResource.Patterns[0], "/")[1:],
+			Schema:       s,
 		}
 	} else {
 		// best effort otherwise
 		r = &Resource{
-			Schema:   s,
-			Pattern:  pattern,
-			Singular: singular,
+			Schema:       s,
+			PatternElems: pattern,
+			Singular:     singular,
 		}
 	}
 	resourceBySingular[singular] = r

@@ -103,7 +103,7 @@ func TestGetServiceDefinition(t *testing.T) {
 
 				widget, ok := sd.Resources["widget"]
 				assert.True(t, ok, "widget resource should exist")
-				assert.Equal(t, widget.Pattern, []string{"widgets", "{widget}"})
+				assert.Equal(t, widget.PatternElems, []string{"widgets", "{widget}"})
 				assert.Equal(t, sd.ServerURL, "https://api.example.com")
 				assert.NotNil(t, widget.GetMethod, "should have GET method")
 				assert.NotNil(t, widget.ListMethod, "should have LIST method")
@@ -165,7 +165,7 @@ func TestGetServiceDefinition(t *testing.T) {
 				assert.True(t, ok, "widget resource should exist")
 				assert.Equal(t, "widget", widget.Singular)
 				assert.Equal(t, "widgets", widget.Plural)
-				assert.Equal(t, []string{"widgets", "{widget}"}, widget.Pattern)
+				assert.Equal(t, []string{"widgets", "{widget}"}, widget.PatternElems)
 			},
 		},
 		{
@@ -245,7 +245,7 @@ func TestGetServiceDefinition(t *testing.T) {
 				widget, ok := sd.Resources["widget"]
 				assert.True(t, ok, "widget resource should exist")
 				assert.NotNil(t, widget.GetMethod, "should have GET method")
-				assert.Equal(t, []string{"widgets", "{widget}"}, widget.Pattern)
+				assert.Equal(t, []string{"widgets", "{widget}"}, widget.PatternElems)
 			},
 		},
 	}

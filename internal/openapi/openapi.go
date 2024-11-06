@@ -70,6 +70,16 @@ func (o *OpenAPI) GetSchemaFromResponse(r Response) *Schema {
 	}
 }
 
+func (o *OpenAPI) GetSchemaFromRequestBody(r RequestBody) *Schema {
+	switch o.OASVersion() {
+	case OAS2:
+		return r.Schema
+	default:
+		ct := r.Content[ContentType]
+		return ct.Schema
+	}
+}
+
 type Server struct {
 	URL         string                    `json:"url"`
 	Description string                    `json:"description,omitempty"`
@@ -124,7 +134,8 @@ type RequestBody struct {
 	Description string               `json:"description"`
 	Content     map[string]MediaType `json:"content"`
 	Required    bool                 `json:"required"`
-	Schema      *Schema              `json:"schema,omitempty"`
+	// oas 2.0 has the schema in the request body.
+	Schema *Schema `json:"schema,omitempty"`
 }
 
 type MediaType struct {

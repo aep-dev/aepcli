@@ -12,16 +12,17 @@ import (
 )
 
 type Resource struct {
-	Singular     string
-	Plural       string
-	Parents      []*Resource
-	Pattern      []string // TOO(yft): support multiple patterns
-	Schema       *openapi.Schema
-	GetMethod    *GetMethod
-	ListMethod   *ListMethod
-	CreateMethod *CreateMethod
-	UpdateMethod *UpdateMethod
-	DeleteMethod *DeleteMethod
+	Singular      string
+	Plural        string
+	Parents       []*Resource
+	PatternElems  []string // TOO(yft): support multiple patterns
+	Schema        *openapi.Schema
+	GetMethod     *GetMethod
+	ListMethod    *ListMethod
+	CreateMethod  *CreateMethod
+	UpdateMethod  *UpdateMethod
+	DeleteMethod  *DeleteMethod
+	CustomMethods []*CustomMethod
 }
 
 type CreateMethod struct {
@@ -40,15 +41,22 @@ type ListMethod struct {
 type DeleteMethod struct {
 }
 
-func (r *Resource) ExecuteCommand(args []string) (*http.Request, error, string) {
+type CustomMethod struct {
+	Name     string
+	Method   string
+	Request  *openapi.Schema
+	Response *openapi.Schema
+}
+
+func (r *Resource) ExecuteCommand(args []string) (*http.Request, string, error) {
 	c := cobra.Command{Use: r.Singular}
 	var err error
 	var req *http.Request
 	var parents []*string
 
 	i := 1
-	for i < len(r.Pattern)-1 {
-		p := r.Pattern[i]
+	for i < len(r.PatternElems)-1 {
+		p := r.PatternElems[i]
 		flagName := p[1 : len(p)-1]
 		var flagValue string
 		parents = append(parents, &flagValue)
@@ -58,9 +66,9 @@ func (r *Resource) ExecuteCommand(args []string) (*http.Request, error, string) 
 
 	withPrefix := func(path string) string {
 		pElems := []string{}
-		for i, p := range r.Pattern {
+		for i, p := range r.PatternElems {
 			// last element, we assume this was handled by the caller.
-			if i == len(r.Pattern)-1 {
+			if i == len(r.PatternElems)-1 {
 				continue
 			}
 			if i%2 == 0 {
@@ -76,8 +84,9 @@ func (r *Resource) ExecuteCommand(args []string) (*http.Request, error, string) 
 	if r.CreateMethod != nil {
 		createArgs := map[string]interface{}{}
 		createCmd := &cobra.Command{
-			Use:   "create",
+			Use:   "create [id]",
 			Short: fmt.Sprintf("Create a %v", strings.ToLower(r.Singular)),
+			Args:  cobra.ExactArgs(1),
 			Run: func(cmd *cobra.Command, args []string) {
 				id := args[0]
 				p := withPrefix(fmt.Sprintf("?id=%s", id))
@@ -97,8 +106,9 @@ func (r *Resource) ExecuteCommand(args []string) (*http.Request, error, string) 
 
 	if r.GetMethod != nil {
 		getCmd := &cobra.Command{
-			Use:   "get",
+			Use:   "get [id]",
 			Short: fmt.Sprintf("Get a %v", strings.ToLower(r.Singular)),
+			Args:  cobra.ExactArgs(1),
 			Run: func(cmd *cobra.Command, args []string) {
 				id := args[0]
 				p := withPrefix(fmt.Sprintf("/%s", id))
@@ -112,8 +122,9 @@ func (r *Resource) ExecuteCommand(args []string) (*http.Request, error, string) 
 
 		updateArgs := map[string]interface{}{}
 		updateCmd := &cobra.Command{
-			Use:   "update",
+			Use:   "update [id]",
 			Short: fmt.Sprintf("Update a %v", strings.ToLower(r.Singular)),
+			Args:  cobra.ExactArgs(1),
 			Run: func(cmd *cobra.Command, args []string) {
 				id := args[0]
 				p := withPrefix(fmt.Sprintf("/%s", id))
@@ -134,8 +145,9 @@ func (r *Resource) ExecuteCommand(args []string) (*http.Request, error, string) 
 	if r.DeleteMethod != nil {
 
 		deleteCmd := &cobra.Command{
-			Use:   "delete",
+			Use:   "delete [id]",
 			Short: fmt.Sprintf("Delete a %v", strings.ToLower(r.Singular)),
+			Args:  cobra.ExactArgs(1),
 			Run: func(cmd *cobra.Command, args []string) {
 				id := args[0]
 				p := withPrefix(fmt.Sprintf("/%s", id))
@@ -157,15 +169,44 @@ func (r *Resource) ExecuteCommand(args []string) (*http.Request, error, string) 
 		}
 		c.AddCommand(listCmd)
 	}
+	for _, cm := range r.CustomMethods {
+		customArgs := map[string]interface{}{}
+		customCmd := &cobra.Command{
+			Use:   fmt.Sprintf("%s [id]", cm.Name),
+			Short: fmt.Sprintf("%v a %v", cm.Method, strings.ToLower(r.Singular)),
+			Args:  cobra.ExactArgs(1),
+			Run: func(cmd *cobra.Command, args []string) {
+				id := args[0]
+				p := withPrefix(fmt.Sprintf("/%s:%s", id, cm.Name))
+				if cm.Method == "POST" {
+					jsonBody, inner_err := generateJsonPayload(cmd, customArgs)
+					if inner_err != nil {
+						slog.Error(fmt.Sprintf("unable to create json body for update: %v", inner_err))
+					}
+					req, err = http.NewRequest(cm.Method, p, strings.NewReader(string(jsonBody)))
+				} else {
+					req, err = http.NewRequest(cm.Method, p, nil)
+				}
+			},
+		}
+		if cm.Method == "POST" {
+			addSchemaFlags(customCmd, *cm.Request, customArgs)
+		}
+		c.AddCommand(customCmd)
+	}
 	var stderr strings.Builder
 	var stdout strings.Builder
 	c.SetOut(&stdout)
 	c.SetErr(&stderr)
 	c.SetArgs(args)
 	if err := c.Execute(); err != nil {
-		return nil, err, stdout.String() + stderr.String()
+		return nil, stdout.String() + stderr.String(), err
 	}
-	return req, err, stdout.String() + stderr.String()
+	return req, stdout.String() + stderr.String(), err
+}
+
+func (r *Resource) GetPattern() string {
+	return strings.Join(r.PatternElems, "/")
 }
 
 func addSchemaFlags(c *cobra.Command, schema openapi.Schema, args map[string]interface{}) error {

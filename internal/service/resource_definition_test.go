@@ -8,10 +8,10 @@ import (
 )
 
 var projectResource = Resource{
-	Singular: "project",
-	Plural:   "projects",
-	Pattern:  []string{"projects", "{project}"},
-	Parents:  []*Resource{},
+	Singular:     "project",
+	Plural:       "projects",
+	PatternElems: []string{"projects", "{project}"},
+	Parents:      []*Resource{},
 	Schema: &openapi.Schema{
 		Properties: map[string]openapi.Schema{
 			"name": {
@@ -90,7 +90,7 @@ func TestExecuteCommand(t *testing.T) {
 			resource: Resource{
 				Singular:     "dataset",
 				Plural:       "datasets",
-				Pattern:      []string{"projects", "{project}", "datasets", "{dataset}"},
+				PatternElems: []string{"projects", "{project}", "datasets", "{dataset}"},
 				Parents:      []*Resource{&projectResource},
 				Schema:       &openapi.Schema{},
 				GetMethod:    &GetMethod{},
@@ -109,7 +109,7 @@ func TestExecuteCommand(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req, err, _ := tt.resource.ExecuteCommand(tt.args)
+			req, _, err := tt.resource.ExecuteCommand(tt.args)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ExecuteCommand() error = %v, wantErr %v", err, tt.wantErr)
 				return
