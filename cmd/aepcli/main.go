@@ -7,8 +7,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/aep-dev/aep-lib-go/pkg/api"
+	"github.com/aep-dev/aep-lib-go/pkg/openapi"
 	"github.com/aep-dev/aepcli/internal/config"
-	"github.com/aep-dev/aepcli/internal/openapi"
 	"github.com/aep-dev/aepcli/internal/service"
 
 	"github.com/spf13/cobra"
@@ -95,21 +96,20 @@ func aepcli(args []string) error {
 		serverURL = api.ServerURL
 	}
 
-	openapi, err := openapi.FetchOpenAPI(fileAliasOrCore)
+	oas, err := openapi.FetchOpenAPI(fileAliasOrCore)
 	if err != nil {
 		return fmt.Errorf("unable to fetch openapi: %w", err)
 	}
-	serviceDefinition, err := service.GetServiceDefinition(openapi, serverURL, pathPrefix)
+	api, err := api.GetAPI(oas, serverURL, pathPrefix)
 	if err != nil {
-		return fmt.Errorf("unable to get service definition: %w", err)
+		return fmt.Errorf("unable to get api: %w", err)
 	}
-
 	headersMap, err := parseHeaders(headers)
 	if err != nil {
 		return fmt.Errorf("unable to parse headers: %w", err)
 	}
 
-	s = service.NewService(*serviceDefinition, headersMap)
+	s = service.NewService(api, headersMap)
 
 	result, err := s.ExecuteCommand(additionalArgs)
 	if err != nil {

@@ -10,19 +10,21 @@ import (
 	"net/url"
 	"sort"
 	"strings"
+
+	"github.com/aep-dev/aep-lib-go/pkg/api"
 )
 
 type Service struct {
-	ServiceDefinition
+	API     api.API
 	Headers map[string]string
 	Client  *http.Client
 }
 
-func NewService(serviceDefinition ServiceDefinition, headers map[string]string) *Service {
+func NewService(api *api.API, headers map[string]string) *Service {
 	return &Service{
-		ServiceDefinition: serviceDefinition,
-		Headers:           headers,
-		Client:            &http.Client{},
+		API:     *api,
+		Headers: headers,
+		Client:  &http.Client{},
 	}
 }
 
@@ -31,18 +33,18 @@ func (s *Service) ExecuteCommand(args []string) (string, error) {
 		return s.PrintHelp(), nil
 	}
 	resource := args[0]
-	r, err := s.GetResource(resource)
+	r, err := s.API.GetResource(resource)
 	if err != nil {
 		return "", fmt.Errorf("%v\n%v", err, s.PrintHelp())
 	}
-	req, output, err := r.ExecuteCommand(args[1:])
+	req, output, err := ExecuteResourceCommand(r, args[1:])
 	if err != nil {
 		return "", fmt.Errorf("unable to execute command: %v", err)
 	}
 	if req == nil {
 		return output, nil
 	}
-	url, err := url.Parse(fmt.Sprintf("%s/%s", s.ServerURL, req.URL.String()))
+	url, err := url.Parse(fmt.Sprintf("%s/%s", s.API.ServerURL, req.URL.String()))
 	if err != nil {
 		return "", fmt.Errorf("unable to create url: %v", err)
 	}
@@ -88,14 +90,14 @@ func (s *Service) doRequest(r *http.Request) (string, error) {
 
 func (s *Service) PrintHelp() string {
 	var resources []string
-	for singular := range s.Resources {
+	for singular := range s.API.Resources {
 		resources = append(resources, singular)
 	}
 	sort.Strings(resources)
 
 	var output strings.Builder
 	output.WriteString("Usage: [resource] [method] [flags]\n\n")
-	output.WriteString("Command group for " + s.ServerURL + "\n\n")
+	output.WriteString("Command group for " + s.API.ServerURL + "\n\n")
 	output.WriteString("Available resources:\n")
 	for _, r := range resources {
 		output.WriteString(fmt.Sprintf("  - %s\n", r))

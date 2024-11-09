@@ -3,13 +3,15 @@ package service
 import (
 	"strings"
 	"testing"
+
+	"github.com/aep-dev/aep-lib-go/pkg/api"
 )
 
 func TestService_ExecuteCommand_ListResources(t *testing.T) {
 	// Test setup
-	svc := NewService(ServiceDefinition{
+	svc := NewService(&api.API{
 		ServerURL: "http://test.com",
-		Resources: map[string]*Resource{
+		Resources: map[string]*api.Resource{
 			"project": &projectResource,
 			"user":    {},
 			"post":    {},

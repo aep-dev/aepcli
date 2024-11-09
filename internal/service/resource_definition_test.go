@@ -4,14 +4,15 @@ import (
 	"io"
 	"testing"
 
-	"github.com/aep-dev/aepcli/internal/openapi"
+	"github.com/aep-dev/aep-lib-go/pkg/api"
+	"github.com/aep-dev/aep-lib-go/pkg/openapi"
 )
 
-var projectResource = Resource{
+var projectResource = api.Resource{
 	Singular:     "project",
 	Plural:       "projects",
 	PatternElems: []string{"projects", "{project}"},
-	Parents:      []*Resource{},
+	Parents:      []*api.Resource{},
 	Schema: &openapi.Schema{
 		Properties: map[string]openapi.Schema{
 			"name": {
@@ -38,17 +39,17 @@ var projectResource = Resource{
 		},
 		Required: []string{"name"},
 	},
-	GetMethod:    &GetMethod{},
-	ListMethod:   &ListMethod{},
-	CreateMethod: &CreateMethod{},
-	UpdateMethod: &UpdateMethod{},
-	DeleteMethod: &DeleteMethod{},
+	GetMethod:    &api.GetMethod{},
+	ListMethod:   &api.ListMethod{},
+	CreateMethod: &api.CreateMethod{},
+	UpdateMethod: &api.UpdateMethod{},
+	DeleteMethod: &api.DeleteMethod{},
 }
 
 func TestExecuteCommand(t *testing.T) {
 	tests := []struct {
 		name           string
-		resource       Resource
+		resource       api.Resource
 		args           []string
 		expectedQuery  string
 		expectedPath   string
@@ -87,17 +88,17 @@ func TestExecuteCommand(t *testing.T) {
 		},
 		{
 			name: "resource with parent",
-			resource: Resource{
+			resource: api.Resource{
 				Singular:     "dataset",
 				Plural:       "datasets",
 				PatternElems: []string{"projects", "{project}", "datasets", "{dataset}"},
-				Parents:      []*Resource{&projectResource},
+				Parents:      []*api.Resource{&projectResource},
 				Schema:       &openapi.Schema{},
-				GetMethod:    &GetMethod{},
-				ListMethod:   &ListMethod{},
-				CreateMethod: &CreateMethod{},
-				UpdateMethod: &UpdateMethod{},
-				DeleteMethod: &DeleteMethod{},
+				GetMethod:    &api.GetMethod{},
+				ListMethod:   &api.ListMethod{},
+				CreateMethod: &api.CreateMethod{},
+				UpdateMethod: &api.UpdateMethod{},
+				DeleteMethod: &api.DeleteMethod{},
 			},
 			args:           []string{"--project=foo", "get", "abc"},
 			expectedPath:   "projects/foo/datasets/abc",
@@ -109,7 +110,7 @@ func TestExecuteCommand(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req, _, err := tt.resource.ExecuteCommand(tt.args)
+			req, _, err := ExecuteResourceCommand(&tt.resource, tt.args)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ExecuteCommand() error = %v, wantErr %v", err, tt.wantErr)
 				return

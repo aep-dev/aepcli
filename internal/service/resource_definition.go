@@ -7,48 +7,12 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/aep-dev/aepcli/internal/openapi"
+	"github.com/aep-dev/aep-lib-go/pkg/api"
+	"github.com/aep-dev/aep-lib-go/pkg/openapi"
 	"github.com/spf13/cobra"
 )
 
-type Resource struct {
-	Singular      string
-	Plural        string
-	Parents       []*Resource
-	PatternElems  []string // TOO(yft): support multiple patterns
-	Schema        *openapi.Schema
-	GetMethod     *GetMethod
-	ListMethod    *ListMethod
-	CreateMethod  *CreateMethod
-	UpdateMethod  *UpdateMethod
-	DeleteMethod  *DeleteMethod
-	CustomMethods []*CustomMethod
-}
-
-type CreateMethod struct {
-	SupportsUserSettableCreate bool
-}
-
-type GetMethod struct {
-}
-
-type UpdateMethod struct {
-}
-
-type ListMethod struct {
-}
-
-type DeleteMethod struct {
-}
-
-type CustomMethod struct {
-	Name     string
-	Method   string
-	Request  *openapi.Schema
-	Response *openapi.Schema
-}
-
-func (r *Resource) ExecuteCommand(args []string) (*http.Request, string, error) {
+func ExecuteResourceCommand(r *api.Resource, args []string) (*http.Request, string, error) {
 	c := cobra.Command{Use: r.Singular}
 	var err error
 	var req *http.Request
@@ -203,10 +167,6 @@ func (r *Resource) ExecuteCommand(args []string) (*http.Request, string, error) 
 		return nil, stdout.String() + stderr.String(), err
 	}
 	return req, stdout.String() + stderr.String(), err
-}
-
-func (r *Resource) GetPattern() string {
-	return strings.Join(r.PatternElems, "/")
 }
 
 func addSchemaFlags(c *cobra.Command, schema openapi.Schema, args map[string]interface{}) error {
