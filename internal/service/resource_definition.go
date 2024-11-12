@@ -136,7 +136,7 @@ func ExecuteResourceCommand(r *api.Resource, args []string) (*http.Request, stri
 	for _, cm := range r.CustomMethods {
 		customArgs := map[string]interface{}{}
 		customCmd := &cobra.Command{
-			Use:   fmt.Sprintf("%s [id]", cm.Name),
+			Use:   fmt.Sprintf(":%s [id]", cm.Name),
 			Short: fmt.Sprintf("%v a %v", cm.Method, strings.ToLower(r.Singular)),
 			Args:  cobra.ExactArgs(1),
 			Run: func(cmd *cobra.Command, args []string) {
