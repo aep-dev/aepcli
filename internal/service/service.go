@@ -39,7 +39,7 @@ func (s *Service) ExecuteCommand(args []string) (string, error) {
 	}
 	req, output, err := ExecuteResourceCommand(r, args[1:])
 	if err != nil {
-		return "", fmt.Errorf("unable to execute command: %v", err)
+		return output, err
 	}
 	if req == nil {
 		return output, nil

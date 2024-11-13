@@ -158,15 +158,13 @@ func ExecuteResourceCommand(r *api.Resource, args []string) (*http.Request, stri
 		}
 		c.AddCommand(customCmd)
 	}
-	var stderr strings.Builder
 	var stdout strings.Builder
 	c.SetOut(&stdout)
-	c.SetErr(&stderr)
 	c.SetArgs(args)
 	if err := c.Execute(); err != nil {
-		return nil, stdout.String() + stderr.String(), err
+		return nil, stdout.String(), err
 	}
-	return req, stdout.String() + stderr.String(), err
+	return req, stdout.String(), err
 }
 
 func addSchemaFlags(c *cobra.Command, schema openapi.Schema, args map[string]interface{}) error {

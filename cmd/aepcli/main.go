@@ -112,10 +112,10 @@ func aepcli(args []string) error {
 	s = service.NewService(api, headersMap)
 
 	result, err := s.ExecuteCommand(additionalArgs)
-	if err != nil {
-		return fmt.Errorf("unable to execute command: %w", err)
-	}
 	fmt.Println(result)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
