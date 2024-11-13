@@ -46,14 +46,23 @@ func ExecuteResourceCommand(r *api.Resource, args []string) (*http.Request, stri
 	}
 
 	if r.CreateMethod != nil {
+		use := "create [id]"
+		args := cobra.ExactArgs(0)
+		if !r.CreateMethod.SupportsUserSettableCreate {
+			use = "create"
+			args = cobra.ExactArgs(1)
+		}
 		createArgs := map[string]interface{}{}
 		createCmd := &cobra.Command{
-			Use:   "create [id]",
+			Use:   use,
 			Short: fmt.Sprintf("Create a %v", strings.ToLower(r.Singular)),
-			Args:  cobra.ExactArgs(1),
+			Args:  args,
 			Run: func(cmd *cobra.Command, args []string) {
-				id := args[0]
-				p := withPrefix(fmt.Sprintf("?id=%s", id))
+				p := withPrefix("")
+				if r.CreateMethod.SupportsUserSettableCreate {
+					id := args[0]
+					p = withPrefix(fmt.Sprintf("?id=%s", id))
+				}
 				jsonBody, err := generateJsonPayload(cmd, createArgs)
 				if err != nil {
 					slog.Error(fmt.Sprintf("unable to create json body for update: %v", err))
