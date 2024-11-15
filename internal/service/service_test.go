@@ -9,7 +9,7 @@ import (
 
 func TestService_ExecuteCommand_ListResources(t *testing.T) {
 	// Test setup
-	svc := NewService(&api.API{
+	svc := NewServiceCommand(&api.API{
 		ServerURL: "http://test.com",
 		Resources: map[string]*api.Resource{
 			"project": &projectResource,
@@ -17,7 +17,7 @@ func TestService_ExecuteCommand_ListResources(t *testing.T) {
 			"post":    {},
 			"comment": {},
 		},
-	}, nil)
+	}, nil, false, false)
 
 	tests := []struct {
 		name          string
@@ -55,7 +55,7 @@ func TestService_ExecuteCommand_ListResources(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := svc.ExecuteCommand(tt.args)
+			result, err := svc.Execute(tt.args)
 			if err != nil {
 				if !tt.expectAsError {
 					t.Errorf("ExecuteCommand() error = %v, expected no error", err)

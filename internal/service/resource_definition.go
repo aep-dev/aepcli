@@ -25,6 +25,7 @@ func ExecuteResourceCommand(r *api.Resource, args []string) (*http.Request, stri
 		var flagValue string
 		parents = append(parents, &flagValue)
 		c.PersistentFlags().StringVar(&flagValue, flagName, "", fmt.Sprintf("The %v of the resource", flagName))
+		c.MarkPersistentFlagRequired(flagName)
 		i += 2
 	}
 
@@ -47,10 +48,10 @@ func ExecuteResourceCommand(r *api.Resource, args []string) (*http.Request, stri
 
 	if r.CreateMethod != nil {
 		use := "create [id]"
-		args := cobra.ExactArgs(0)
+		args := cobra.ExactArgs(1)
 		if !r.CreateMethod.SupportsUserSettableCreate {
 			use = "create"
-			args = cobra.ExactArgs(1)
+			args = cobra.ExactArgs(0)
 		}
 		createArgs := map[string]interface{}{}
 		createCmd := &cobra.Command{

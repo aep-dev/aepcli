@@ -25,6 +25,8 @@ func main() {
 }
 
 func aepcli(args []string) error {
+	var dryRun bool
+	var logHTTP bool
 	var logLevel string
 	var fileAliasOrCore string
 	var additionalArgs []string
@@ -32,7 +34,7 @@ func aepcli(args []string) error {
 	var pathPrefix string
 	var serverURL string
 	var configFileVar string
-	var s *service.Service
+	var s *service.ServiceCommand
 
 	rootCmd := &cobra.Command{
 		Use:  "aepcli [host or api alias] [resource or --help]",
@@ -53,6 +55,8 @@ func aepcli(args []string) error {
 	rootCmd.Flags().SetInterspersed(false) // allow sub parsers to parse subsequent flags after the resource
 	rootCmd.PersistentFlags().StringArrayVar(&headers, "header", []string{}, "Specify headers in the format key=value")
 	rootCmd.PersistentFlags().StringVar(&logLevel, "log-level", "info", "Set the logging level (debug, info, warn, error)")
+	rootCmd.PersistentFlags().BoolVar(&logHTTP, "log-http", false, "Set to true to log HTTP requests. This can be helpful when attempting to write your own code or debug.")
+	rootCmd.PersistentFlags().BoolVar(&dryRun, "dry-run", false, "Set to true to not make any changes. This can be helpful when paired with log-http to just view http requests instead of perform them.")
 	rootCmd.PersistentFlags().StringVar(&pathPrefix, "path-prefix", "", "Specify a path prefix that is prepended to all paths in the openapi schema. This will strip them when evaluating the resource hierarchy paths.")
 	rootCmd.PersistentFlags().StringVar(&serverURL, "server-url", "", "Specify a URL to use for the server. If not specified, the first server URL in the OpenAPI definition will be used.")
 	rootCmd.PersistentFlags().StringVar(&configFileVar, "config", "", "Path to config file")
@@ -109,9 +113,9 @@ func aepcli(args []string) error {
 		return fmt.Errorf("unable to parse headers: %w", err)
 	}
 
-	s = service.NewService(api, headersMap)
+	s = service.NewServiceCommand(api, headersMap, dryRun, logHTTP)
 
-	result, err := s.ExecuteCommand(additionalArgs)
+	result, err := s.Execute(additionalArgs)
 	fmt.Println(result)
 	if err != nil {
 		return err

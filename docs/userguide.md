@@ -178,6 +178,19 @@ lists are specified as a comma-separated list:
 aepcli bookstore book-edition create --book "peter-pan" --publisher "consistent-house" --tags "fantasy,childrens"
 ```
 
+### Logging HTTP requests and Dry Runs
+
+aepcli supports logging http requests and dry runs. To log http requests, use the
+`--log-http` flag. To perform a dry run, use the `--dry-run` flag.
+
+Combined, they can be useful for creating HTTP calls without having to craft the
+HTTP request by hand:
+
+```bash
+aepcli --dry-run --log-http bookstore book --publisher=standard-house get foo
+Request: GET http://localhost:8081/publishers/standard-house/books/foo
+```
+
 ### core commands
 
 See `aepcli core --help` for commands for aepcli (e.g. config)

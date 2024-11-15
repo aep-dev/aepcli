@@ -39,9 +39,11 @@ var projectResource = api.Resource{
 		},
 		Required: []string{"name"},
 	},
-	GetMethod:    &api.GetMethod{},
-	ListMethod:   &api.ListMethod{},
-	CreateMethod: &api.CreateMethod{},
+	GetMethod:  &api.GetMethod{},
+	ListMethod: &api.ListMethod{},
+	CreateMethod: &api.CreateMethod{
+		SupportsUserSettableCreate: true,
+	},
 	UpdateMethod: &api.UpdateMethod{},
 	DeleteMethod: &api.DeleteMethod{},
 }

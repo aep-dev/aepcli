@@ -14,21 +14,25 @@ import (
 	"github.com/aep-dev/aep-lib-go/pkg/api"
 )
 
-type Service struct {
+type ServiceCommand struct {
 	API     api.API
 	Headers map[string]string
+	DryRun  bool
+	LogHTTP bool
 	Client  *http.Client
 }
 
-func NewService(api *api.API, headers map[string]string) *Service {
-	return &Service{
+func NewServiceCommand(api *api.API, headers map[string]string, dryRun bool, logHTTP bool) *ServiceCommand {
+	return &ServiceCommand{
 		API:     *api,
 		Headers: headers,
+		DryRun:  dryRun,
+		LogHTTP: logHTTP,
 		Client:  &http.Client{},
 	}
 }
 
-func (s *Service) ExecuteCommand(args []string) (string, error) {
+func (s *ServiceCommand) Execute(args []string) (string, error) {
 	if len(args) == 0 || args[0] == "--help" {
 		return s.PrintHelp(), nil
 	}
@@ -56,7 +60,7 @@ func (s *Service) ExecuteCommand(args []string) (string, error) {
 	return strings.Join([]string{output, reqOutput}, "\n"), nil
 }
 
-func (s *Service) doRequest(r *http.Request) (string, error) {
+func (s *ServiceCommand) doRequest(r *http.Request) (string, error) {
 	r.Header.Set("Content-Type", "application/json")
 	for k, v := range s.Headers {
 		r.Header.Set(k, v)
@@ -70,10 +74,18 @@ func (s *Service) doRequest(r *http.Request) (string, error) {
 		r.Body = io.NopCloser(bytes.NewBuffer(b))
 		body = string(b)
 	}
-	slog.Debug(fmt.Sprintf("Request: %s %s\n%s", r.Method, r.URL.String(), string(body)))
+	requestLog := fmt.Sprintf("Request: %s %s\n%s", r.Method, r.URL.String(), string(body))
+	slog.Debug(requestLog)
+	if s.LogHTTP {
+		fmt.Println(requestLog)
+	}
+	if s.DryRun {
+		slog.Debug("Dry run: not making request")
+		return "", nil
+	}
 	resp, err := s.Client.Do(r)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("unable to execute request: %v", err)
 	}
 	defer resp.Body.Close()
 	respBody, err := io.ReadAll(resp.Body)
@@ -88,7 +100,7 @@ func (s *Service) doRequest(r *http.Request) (string, error) {
 	return prettyJSON.String(), nil
 }
 
-func (s *Service) PrintHelp() string {
+func (s *ServiceCommand) PrintHelp() string {
 	var resources []string
 	for singular := range s.API.Resources {
 		resources = append(resources, singular)
