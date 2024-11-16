@@ -195,6 +195,16 @@ Request: GET http://localhost:8081/publishers/standard-house/books/foo
 
 See `aepcli core --help` for commands for aepcli (e.g. config)
 
+#### convert
+
+Parse an existing OpenAPI definition as much as possible and convert it to an AEP-compliant OpenAPI definition.
+
+This is helpful as a tool to do OpenAPI conversion when it is difficult to update the definition (e.g. the generation logic is in a third-party codebase). It's availability as a CLI also simplifies the process of integrating into CD processes to publish the spec publicly.
+
+```bash
+aepcli core openapi convert --input-path=openapis/bookstore.json --output-path=openapis/bookstore.aep.json --path-prefix=/bookstore
+```
+
 ## OpenAPI Definitions
 
 ### OAS definitions supported

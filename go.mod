@@ -4,7 +4,7 @@ go 1.22.3
 
 require (
 	github.com/BurntSushi/toml v1.4.0 // indirect
-	github.com/aep-dev/aep-lib-go v0.0.0-20241109204312-789b93c37d17 // indirect
+	github.com/aep-dev/aep-lib-go v0.0.0-20241116210104-baaf5068c543 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
