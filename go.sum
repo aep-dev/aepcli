@@ -6,6 +6,8 @@ github.com/aep-dev/aep-lib-go v0.0.0-20241116073126-52817379fc1d h1:juPQ462ve7LE
 github.com/aep-dev/aep-lib-go v0.0.0-20241116073126-52817379fc1d/go.mod h1:M+h1D6T2uIUPelmaEsJbjR6JhqKsTlPX3lxp25zQQsk=
 github.com/aep-dev/aep-lib-go v0.0.0-20241116210104-baaf5068c543 h1:47/49jTwjRRZWLiiaWvXNWf+6p7IqLrkWwzPsGS2scI=
 github.com/aep-dev/aep-lib-go v0.0.0-20241116210104-baaf5068c543/go.mod h1:M+h1D6T2uIUPelmaEsJbjR6JhqKsTlPX3lxp25zQQsk=
+github.com/aep-dev/aep-lib-go v0.0.0-20241118063646-299cf2127afb h1:czV4XztLkJg4eN3DCosihhBpEwLdktfoaEC+CVp8aYc=
+github.com/aep-dev/aep-lib-go v0.0.0-20241118063646-299cf2127afb/go.mod h1:M+h1D6T2uIUPelmaEsJbjR6JhqKsTlPX3lxp25zQQsk=
 github.com/cpuguy83/go-md2man/v2 v2.0.4/go.mod h1:tgQtvFlXSQOSOSIRvRPT7W67SCa46tRHOmNcaadrF8o=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
