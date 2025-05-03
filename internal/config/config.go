@@ -25,7 +25,7 @@ type API struct {
 func ReadConfigFromFile(file string) (*Config, error) {
 	// Check if file exists first
 	if _, err := os.Stat(file); os.IsNotExist(err) {
-		slog.Warn("Config file does not exist, using default configuration", "file", file)
+		slog.Debug("Config file does not exist, using default configuration", "file", file)
 		return &Config{APIs: make(map[string]API)}, nil
 	}
 

@@ -3,21 +3,11 @@ package service
 import (
 	"strings"
 	"testing"
-
-	"github.com/aep-dev/aep-lib-go/pkg/api"
 )
 
 func TestService_ExecuteCommand_ListResources(t *testing.T) {
 	// Test setup
-	svc := NewServiceCommand(&api.API{
-		ServerURL: "http://test.com",
-		Resources: map[string]*api.Resource{
-			"project": &projectResource,
-			"user":    {},
-			"post":    {},
-			"comment": {},
-		},
-	}, nil, false, false)
+	svc := NewServiceCommand(getTestAPI(), nil, false, false)
 
 	tests := []struct {
 		name          string
@@ -28,12 +18,12 @@ func TestService_ExecuteCommand_ListResources(t *testing.T) {
 		{
 			name:     "no arguments",
 			args:     []string{},
-			expected: "Available resources:\n  - comment\n  - post\n  - project\n  - user\n",
+			expected: "Available resources:\n  - comment\n  - dataset\n  - project\n  - user\n",
 		},
 		{
 			name:     "help flag",
 			args:     []string{"--help"},
-			expected: "Available resources:\n  - comment\n  - post\n  - project\n  - user\n",
+			expected: "Available resources:\n  - comment\n  - dataset\n  - project\n  - user\n",
 		},
 		{
 			name:          "unknown resource",

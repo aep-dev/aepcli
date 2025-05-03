@@ -19,8 +19,9 @@ func ExecuteResourceCommand(r *api.Resource, args []string) (*http.Request, stri
 	var parents []*string
 
 	i := 1
-	for i < len(r.PatternElems)-1 {
-		p := r.PatternElems[i]
+	patternElems := r.PatternElems()
+	for i < len(patternElems)-1 {
+		p := patternElems[i]
 		flagName := p[1 : len(p)-1]
 		var flagValue string
 		parents = append(parents, &flagValue)
@@ -31,9 +32,9 @@ func ExecuteResourceCommand(r *api.Resource, args []string) (*http.Request, stri
 
 	withPrefix := func(path string) string {
 		pElems := []string{}
-		for i, p := range r.PatternElems {
+		for i, p := range patternElems {
 			// last element, we assume this was handled by the caller.
-			if i == len(r.PatternElems)-1 {
+			if i == len(patternElems)-1 {
 				continue
 			}
 			if i%2 == 0 {
@@ -46,10 +47,10 @@ func ExecuteResourceCommand(r *api.Resource, args []string) (*http.Request, stri
 		return fmt.Sprintf("%s%s", prefix, path)
 	}
 
-	if r.CreateMethod != nil {
+	if r.Methods.Create != nil {
 		use := "create [id]"
 		args := cobra.ExactArgs(1)
-		if !r.CreateMethod.SupportsUserSettableCreate {
+		if !r.Methods.Create.SupportsUserSettableCreate {
 			use = "create"
 			args = cobra.ExactArgs(0)
 		}
@@ -60,7 +61,7 @@ func ExecuteResourceCommand(r *api.Resource, args []string) (*http.Request, stri
 			Args:  args,
 			Run: func(cmd *cobra.Command, args []string) {
 				p := withPrefix("")
-				if r.CreateMethod.SupportsUserSettableCreate {
+				if r.Methods.Create.SupportsUserSettableCreate {
 					id := args[0]
 					p = withPrefix(fmt.Sprintf("?id=%s", id))
 				}
@@ -78,7 +79,7 @@ func ExecuteResourceCommand(r *api.Resource, args []string) (*http.Request, stri
 		c.AddCommand(createCmd)
 	}
 
-	if r.GetMethod != nil {
+	if r.Methods.Get != nil {
 		getCmd := &cobra.Command{
 			Use:   "get [id]",
 			Short: fmt.Sprintf("Get a %v", strings.ToLower(r.Singular)),
@@ -92,7 +93,7 @@ func ExecuteResourceCommand(r *api.Resource, args []string) (*http.Request, stri
 		c.AddCommand(getCmd)
 	}
 
-	if r.UpdateMethod != nil {
+	if r.Methods.Update != nil {
 
 		updateArgs := map[string]interface{}{}
 		updateCmd := &cobra.Command{
@@ -116,7 +117,7 @@ func ExecuteResourceCommand(r *api.Resource, args []string) (*http.Request, stri
 		c.AddCommand(updateCmd)
 	}
 
-	if r.DeleteMethod != nil {
+	if r.Methods.Delete != nil {
 
 		deleteCmd := &cobra.Command{
 			Use:   "delete [id]",
@@ -131,7 +132,7 @@ func ExecuteResourceCommand(r *api.Resource, args []string) (*http.Request, stri
 		c.AddCommand(deleteCmd)
 	}
 
-	if r.ListMethod != nil {
+	if r.Methods.List != nil {
 
 		listCmd := &cobra.Command{
 			Use:   "list",

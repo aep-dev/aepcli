@@ -8,50 +8,91 @@ import (
 	"github.com/aep-dev/aep-lib-go/pkg/openapi"
 )
 
-var projectResource = api.Resource{
-	Singular:     "project",
-	Plural:       "projects",
-	PatternElems: []string{"projects", "{project}"},
-	Parents:      []*api.Resource{},
-	Schema: &openapi.Schema{
-		Properties: map[string]openapi.Schema{
-			"name": {
-				Type: "string",
-			},
-			"description": {
-				Type: "string",
-			},
-			"active": {
-				Type: "boolean",
-			},
-			"tags": {
-				Type: "array",
-				Items: &openapi.Schema{
+func getTestAPI() *api.API {
+	projectResource := api.Resource{
+		Singular: "project",
+		Plural:   "projects",
+		Parents:  []string{},
+		Schema: &openapi.Schema{
+			Properties: map[string]openapi.Schema{
+				"name": {
 					Type: "string",
 				},
+				"description": {
+					Type: "string",
+				},
+				"active": {
+					Type: "boolean",
+				},
+				"tags": {
+					Type: "array",
+					Items: &openapi.Schema{
+						Type: "string",
+					},
+				},
+				"metadata": {
+					Type: "object",
+				},
+				"priority": {
+					Type: "integer",
+				},
 			},
-			"metadata": {
-				Type: "object",
+			Required: []string{"name"},
+		},
+		Methods: api.Methods{
+			Get:  &api.GetMethod{},
+			List: &api.ListMethod{},
+			Create: &api.CreateMethod{
+				SupportsUserSettableCreate: true,
 			},
-			"priority": {
-				Type: "integer",
+			Update: &api.UpdateMethod{},
+			Delete: &api.DeleteMethod{},
+		},
+	}
+
+	a := &api.API{
+		Name:      "test",
+		ServerURL: "https://api.example.com",
+		Resources: map[string]*api.Resource{
+			"project": &projectResource,
+			"dataset": &api.Resource{
+				Singular: "dataset",
+				Plural:   "datasets",
+				Parents:  []string{"project"},
+				Schema:   &openapi.Schema{},
+				Methods: api.Methods{
+					Get:    &api.GetMethod{},
+					List:   &api.ListMethod{},
+					Create: &api.CreateMethod{},
+					Update: &api.UpdateMethod{},
+					Delete: &api.DeleteMethod{},
+				},
+			},
+			"user": &api.Resource{
+				Singular: "user",
+				Plural:   "users",
+				Parents:  []string{},
+				Schema:   &openapi.Schema{},
+			},
+			"comment": &api.Resource{
+				Singular: "comment",
+				Plural:   "comments",
+				Parents:  []string{},
+				Schema:   &openapi.Schema{},
 			},
 		},
-		Required: []string{"name"},
-	},
-	GetMethod:  &api.GetMethod{},
-	ListMethod: &api.ListMethod{},
-	CreateMethod: &api.CreateMethod{
-		SupportsUserSettableCreate: true,
-	},
-	UpdateMethod: &api.UpdateMethod{},
-	DeleteMethod: &api.DeleteMethod{},
+	}
+	err := api.AddImplicitFieldsAndValidate(a)
+	if err != nil {
+		panic(err)
+	}
+	return a
 }
 
 func TestExecuteCommand(t *testing.T) {
 	tests := []struct {
 		name           string
-		resource       api.Resource
+		resource       string
 		args           []string
 		expectedQuery  string
 		expectedPath   string
@@ -61,7 +102,7 @@ func TestExecuteCommand(t *testing.T) {
 	}{
 		{
 			name:           "simple resource no parents",
-			resource:       projectResource,
+			resource:       "project",
 			args:           []string{"list"},
 			expectedPath:   "projects",
 			expectedMethod: "GET",
@@ -70,7 +111,7 @@ func TestExecuteCommand(t *testing.T) {
 		},
 		{
 			name:           "create with tags",
-			resource:       projectResource,
+			resource:       "project",
 			args:           []string{"create", "myproject", "--name=test-project", "--tags=tag1,tag2,tag3"},
 			expectedPath:   "projects",
 			expectedMethod: "POST",
@@ -80,7 +121,7 @@ func TestExecuteCommand(t *testing.T) {
 		},
 		{
 			name:           "create with tags quoted",
-			resource:       projectResource,
+			resource:       "project",
 			args:           []string{"create", "myproject", "--name=test-project", "--tags=\"tag1,\",tag2,tag3"},
 			expectedPath:   "projects",
 			expectedMethod: "POST",
@@ -89,19 +130,8 @@ func TestExecuteCommand(t *testing.T) {
 			body:           `{"name":"test-project","tags":["tag1,","tag2","tag3"]}`,
 		},
 		{
-			name: "resource with parent",
-			resource: api.Resource{
-				Singular:     "dataset",
-				Plural:       "datasets",
-				PatternElems: []string{"projects", "{project}", "datasets", "{dataset}"},
-				Parents:      []*api.Resource{&projectResource},
-				Schema:       &openapi.Schema{},
-				GetMethod:    &api.GetMethod{},
-				ListMethod:   &api.ListMethod{},
-				CreateMethod: &api.CreateMethod{},
-				UpdateMethod: &api.UpdateMethod{},
-				DeleteMethod: &api.DeleteMethod{},
-			},
+			name:           "resource with parent",
+			resource:       "dataset",
 			args:           []string{"--project=foo", "get", "abc"},
 			expectedPath:   "projects/foo/datasets/abc",
 			expectedMethod: "GET",
@@ -112,7 +142,8 @@ func TestExecuteCommand(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req, _, err := ExecuteResourceCommand(&tt.resource, tt.args)
+			a := getTestAPI()
+			req, _, err := ExecuteResourceCommand(a.Resources[tt.resource], tt.args)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ExecuteCommand() error = %v, wantErr %v", err, tt.wantErr)
 				return
