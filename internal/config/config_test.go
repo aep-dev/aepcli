@@ -1,8 +1,6 @@
 package config
 
 import (
-	"errors"
-	"os"
 	"path/filepath"
 	"testing"
 
@@ -14,10 +12,11 @@ func TestConfigEndToEnd(t *testing.T) {
 	tmpDir := t.TempDir()
 	testFile := filepath.Join(tmpDir, "test_config.toml")
 
-	// First read should fail since file doesn't exist
-	_, err := ReadConfigFromFile(testFile)
-	assert.Error(t, err)
-	assert.True(t, errors.Is(err, os.ErrNotExist))
+	// First read should return a default configuration since file doesn't exist
+	cfg, err := ReadConfigFromFile(testFile)
+	assert.NoError(t, err)
+	assert.NotNil(t, cfg)
+	assert.Empty(t, cfg.APIs)
 
 	// Create test API config
 	testAPI := API{
@@ -33,7 +32,7 @@ func TestConfigEndToEnd(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Read config back and verify contents
-	cfg, err := ReadConfigFromFile(testFile)
+	cfg, err = ReadConfigFromFile(testFile)
 	assert.NoError(t, err)
 	assert.NotNil(t, cfg)
 	assert.Len(t, cfg.APIs, 1)
@@ -60,4 +59,18 @@ func TestWriteAPIWithEmptyName(t *testing.T) {
 	err := WriteAPIWithName(testFile, testAPI, false)
 	assert.Error(t, err)
 	assert.Equal(t, "api name cannot be empty", err.Error())
+}
+
+func TestReadConfigFromFile_NoFile(t *testing.T) {
+	// Create a temporary directory
+	tmpDir := t.TempDir()
+	testFile := filepath.Join(tmpDir, "nonexistent_config.toml")
+
+	// Attempt to read the config file
+	cfg, err := ReadConfigFromFile(testFile)
+
+	// Verify no error is returned and a default config is provided
+	assert.NoError(t, err)
+	assert.NotNil(t, cfg)
+	assert.Empty(t, cfg.APIs)
 }
