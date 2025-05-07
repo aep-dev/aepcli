@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/aep-dev/aep-lib-go/pkg/api"
@@ -63,7 +64,7 @@ func ExecuteResourceCommand(r *api.Resource, args []string) (*http.Request, stri
 				p := withPrefix("")
 				if r.Methods.Create.SupportsUserSettableCreate {
 					id := args[0]
-					p = withPrefix(fmt.Sprintf("?id=%s", id))
+					p = withPrefix(fmt.Sprintf("?id=%s", url.QueryEscape(id)))
 				}
 				jsonBody, err := generateJsonPayload(cmd, createArgs)
 				if err != nil {
