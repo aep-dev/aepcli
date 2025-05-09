@@ -57,11 +57,21 @@ func (s *ServiceCommand) Execute(args []string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("unable to execute request: %v", err)
 	}
-	return strings.Join([]string{output, reqOutput}, "\n"), nil
+	outputs := []string{}
+	for _, o := range []string{output, reqOutput} {
+		if o != "" {
+			outputs = append(outputs, o)
+		}
+	}
+	return strings.Join(outputs, "\n"), nil
 }
 
 func (s *ServiceCommand) doRequest(r *http.Request) (string, error) {
-	r.Header.Set("Content-Type", "application/json")
+	contentType := "application/json"
+	if r.Method == http.MethodPatch {
+		contentType = "application/merge-patch+json"
+	}
+	r.Header.Set("Content-Type", contentType)
 	for k, v := range s.Headers {
 		r.Header.Set(k, v)
 	}
