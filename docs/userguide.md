@@ -4,7 +4,7 @@
 
 To install the binary, download it from the [releases page](https://github.com/aep-dev/aepcli/releases).
 
-Alternatively, you can install it using `go install github.com/aep-dev/aepcli/cmd/aepcli@latest`.
+Alternatively, you can install it using `go install github.com/aep-dev/aepcli/cmd/aepcli@main`.
 
 ## Getting started
 
