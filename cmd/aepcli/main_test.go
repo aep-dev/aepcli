@@ -22,7 +22,7 @@ func TestAepcli(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := aepcli(tt.args)
+			code, err := aepcli(tt.args)
 
 			if tt.wantErr {
 				if err == nil {
@@ -37,6 +37,10 @@ func TestAepcli(t *testing.T) {
 
 			if err != nil {
 				t.Errorf("aepcli() unexpected error = %v", err)
+			}
+
+			if code != 0 {
+				t.Errorf("aepcli() unexpected exit code = %v, want 0", code)
 			}
 		})
 	}

@@ -55,7 +55,7 @@ func getTestAPI() *api.API {
 		ServerURL: "https://api.example.com",
 		Resources: map[string]*api.Resource{
 			"project": &projectResource,
-			"dataset": &api.Resource{
+			"dataset": {
 				Singular: "dataset",
 				Plural:   "datasets",
 				Parents:  []string{"project"},
@@ -68,13 +68,13 @@ func getTestAPI() *api.API {
 					Delete: &api.DeleteMethod{},
 				},
 			},
-			"user": &api.Resource{
+			"user": {
 				Singular: "user",
 				Plural:   "users",
 				Parents:  []string{},
 				Schema:   &openapi.Schema{},
 			},
-			"comment": &api.Resource{
+			"comment": {
 				Singular: "comment",
 				Plural:   "comments",
 				Parents:  []string{},

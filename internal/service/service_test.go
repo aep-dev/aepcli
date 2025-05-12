@@ -52,8 +52,8 @@ func TestService_ExecuteCommand_ListResources(t *testing.T) {
 				} else if !strings.Contains(err.Error(), tt.expected) {
 					t.Errorf("ExecuteCommand() error = %v, expected it to contain %v", err, tt.expected)
 				}
-			} else if !strings.Contains(result, tt.expected) {
-				t.Errorf("ExecuteCommand() = %q, expected it to contain %q", result, tt.expected)
+			} else if !strings.Contains(result.Output, tt.expected) {
+				t.Errorf("ExecuteCommand() = %q, expected it to contain %q", result.Output, tt.expected)
 			}
 		})
 	}

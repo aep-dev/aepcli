@@ -15,16 +15,22 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const (
+	CODE_OK                  = 0
+	CODE_ERR                 = 1
+	CODE_HTTP_ERROR_RESPONSE = 2
+)
+
 func main() {
-	err := aepcli(os.Args[1:])
+	code, err := aepcli(os.Args[1:])
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	os.Exit(0)
+	os.Exit(code)
 }
 
-func aepcli(args []string) error {
+func aepcli(args []string) (int, error) {
 	var dryRun bool
 	var logHTTP bool
 	var logLevel string
@@ -49,7 +55,7 @@ func aepcli(args []string) error {
 
 	configFile, err := config.DefaultConfigFile()
 	if err != nil {
-		return fmt.Errorf("unable to get default config file: %w", err)
+		return CODE_OK, fmt.Errorf("unable to get default config file: %w", err)
 	}
 
 	rootCmd.Flags().SetInterspersed(false) // allow sub parsers to parse subsequent flags after the resource
@@ -63,7 +69,7 @@ func aepcli(args []string) error {
 	rootCmd.SetArgs(args)
 
 	if err := rootCmd.Execute(); err != nil {
-		return err
+		return CODE_OK, err
 	}
 
 	if configFileVar != "" {
@@ -71,22 +77,22 @@ func aepcli(args []string) error {
 	}
 
 	if err := setLogLevel(logLevel); err != nil {
-		return fmt.Errorf("unable to set log level: %w", err)
+		return CODE_ERR, fmt.Errorf("unable to set log level: %w", err)
 	}
 
 	c, err := config.ReadConfigFromFile(configFile)
 	if err != nil {
-		return fmt.Errorf("unable to read config: %v", err)
+		return CODE_ERR, fmt.Errorf("unable to read config: %v", err)
 	}
 
 	if fileAliasOrCore == "core" {
-		return handleCoreCommand(additionalArgs, configFile)
+		return CODE_OK, handleCoreCommand(additionalArgs, configFile)
 	}
 
 	if api, ok := c.APIs[fileAliasOrCore]; ok {
 		cd, err := config.ConfigDir()
 		if err != nil {
-			return fmt.Errorf("unable to get config directory: %w", err)
+			return CODE_ERR, fmt.Errorf("unable to get config directory: %w", err)
 		}
 		if filepath.IsAbs(api.OpenAPIPath) || strings.HasPrefix(api.OpenAPIPath, "http") {
 			fileAliasOrCore = api.OpenAPIPath
@@ -102,25 +108,33 @@ func aepcli(args []string) error {
 
 	oas, err := openapi.FetchOpenAPI(fileAliasOrCore)
 	if err != nil {
-		return fmt.Errorf("unable to fetch openapi: %w", err)
+		return CODE_ERR, fmt.Errorf("unable to fetch openapi: %w", err)
 	}
 	api, err := api.GetAPI(oas, serverURL, pathPrefix)
 	if err != nil {
-		return fmt.Errorf("unable to get api: %w", err)
+		return CODE_ERR, fmt.Errorf("unable to get api: %w", err)
 	}
 	headersMap, err := parseHeaders(headers)
 	if err != nil {
-		return fmt.Errorf("unable to parse headers: %w", err)
+		return CODE_ERR, fmt.Errorf("unable to parse headers: %w", err)
 	}
 
 	s = service.NewServiceCommand(api, headersMap, dryRun, logHTTP)
 
 	result, err := s.Execute(additionalArgs)
-	fmt.Println(result)
-	if err != nil {
-		return err
+	returnCode := CODE_OK
+	output := ""
+	if result != nil {
+		output = result.Output
+		if result.StatusCode != 0 && result.StatusCode/100 == 2 {
+			returnCode = CODE_HTTP_ERROR_RESPONSE
+		}
 	}
-	return nil
+	fmt.Println(output)
+	if err != nil {
+		return CODE_ERR, err
+	}
+	return returnCode, nil
 }
 
 func parseHeaders(headers []string) (map[string]string, error) {

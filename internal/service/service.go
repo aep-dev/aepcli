@@ -32,41 +32,38 @@ func NewServiceCommand(api *api.API, headers map[string]string, dryRun bool, log
 	}
 }
 
-func (s *ServiceCommand) Execute(args []string) (string, error) {
+func (s *ServiceCommand) Execute(args []string) (*Result, error) {
 	if len(args) == 0 || args[0] == "--help" {
-		return s.PrintHelp(), nil
+		return &Result{s.PrintHelp(), 0}, nil
 	}
 	resource := args[0]
 	r, err := s.API.GetResource(resource)
 	if err != nil {
-		return "", fmt.Errorf("%v\n%v", err, s.PrintHelp())
+		return nil, fmt.Errorf("%v\n%v", err, s.PrintHelp())
 	}
 	req, output, err := ExecuteResourceCommand(r, args[1:])
 	if err != nil {
-		return output, err
+		return &Result{output, 0}, err
 	}
 	if req == nil {
-		return output, nil
+		return &Result{output, 0}, nil
 	}
 	url, err := url.Parse(fmt.Sprintf("%s/%s", s.API.ServerURL, req.URL.String()))
 	if err != nil {
-		return "", fmt.Errorf("unable to create url: %v", err)
+		return nil, fmt.Errorf("unable to create url: %v", err)
 	}
 	req.URL = url
-	reqOutput, err := s.doRequest(req)
+	resp, err := s.doRequest(req)
 	if err != nil {
-		return "", fmt.Errorf("unable to execute request: %v", err)
+		return nil, fmt.Errorf("unable to execute request: %v", err)
 	}
-	outputs := []string{}
-	for _, o := range []string{output, reqOutput} {
-		if o != "" {
-			outputs = append(outputs, o)
-		}
+	if output != "" {
+		resp.Output = output + "\n" + resp.Output
 	}
-	return strings.Join(outputs, "\n"), nil
+	return resp, nil
 }
 
-func (s *ServiceCommand) doRequest(r *http.Request) (string, error) {
+func (s *ServiceCommand) doRequest(r *http.Request) (*Result, error) {
 	contentType := "application/json"
 	if r.Method == http.MethodPatch {
 		contentType = "application/merge-patch+json"
@@ -79,7 +76,7 @@ func (s *ServiceCommand) doRequest(r *http.Request) (string, error) {
 	if r.Body != nil {
 		b, err := io.ReadAll(r.Body)
 		if err != nil {
-			return "", fmt.Errorf("unable to read request body: %v", err)
+			return nil, fmt.Errorf("unable to read request body: %v", err)
 		}
 		r.Body = io.NopCloser(bytes.NewBuffer(b))
 		body = string(b)
@@ -91,23 +88,23 @@ func (s *ServiceCommand) doRequest(r *http.Request) (string, error) {
 	}
 	if s.DryRun {
 		slog.Debug("Dry run: not making request")
-		return "", nil
+		return nil, nil
 	}
 	resp, err := s.Client.Do(r)
 	if err != nil {
-		return "", fmt.Errorf("unable to execute request: %v", err)
+		return nil, fmt.Errorf("unable to execute request: %v", err)
 	}
 	defer resp.Body.Close()
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", fmt.Errorf("unable to read response body: %v", err)
+		return nil, fmt.Errorf("unable to read response body: %v", err)
 	}
 	var prettyJSON bytes.Buffer
 	err = json.Indent(&prettyJSON, respBody, "", "  ")
 	if err != nil {
-		return "", fmt.Errorf("failed to format JSON: %w", err)
+		return nil, fmt.Errorf("failed to format JSON: %w", err)
 	}
-	return prettyJSON.String(), nil
+	return &Result{prettyJSON.String(), resp.StatusCode}, nil
 }
 
 func (s *ServiceCommand) PrintHelp() string {
