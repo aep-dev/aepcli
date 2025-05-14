@@ -126,7 +126,7 @@ func aepcli(args []string) (int, error) {
 	output := ""
 	if result != nil {
 		output = result.Output
-		if result.StatusCode != 0 && result.StatusCode/100 == 2 {
+		if result.StatusCode != 0 && result.StatusCode/100 != 2 {
 			returnCode = CODE_HTTP_ERROR_RESPONSE
 		}
 	}
