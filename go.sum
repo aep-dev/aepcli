@@ -2,6 +2,8 @@ github.com/BurntSushi/toml v1.4.0 h1:kuoIxZQy2WRRk1pttg9asf+WVv6tWQuBNVmK8+nqPr0
 github.com/BurntSushi/toml v1.4.0/go.mod h1:ukJfTF/6rtPPRCnwkur4qwRxa8vTRFBF0uk2lLoLwho=
 github.com/aep-dev/aep-lib-go v0.0.0-20250514123412-03de496bdecf h1:fBHYtDAK2M/WAGG5cBHmewlW5XSdt9SaBASSb+KadT8=
 github.com/aep-dev/aep-lib-go v0.0.0-20250514123412-03de496bdecf/go.mod h1:YWfg3gjAGpvwFJnEQl1JjBGd0evGBKobt5wU/QxV6pA=
+github.com/aep-dev/aep-lib-go v0.0.0-20251011190527-4b8a96d91310 h1:Hp9cCdNYMYq0DkfcgEE68rIrVRBn8YcoY9mfVvo7Zug=
+github.com/aep-dev/aep-lib-go v0.0.0-20251011190527-4b8a96d91310/go.mod h1:26IeaYRvf6ObXyPm6rlqEUiH0qyFoT1Eyf8Ys2r95tg=
 github.com/cpuguy83/go-md2man/v2 v2.0.4/go.mod h1:tgQtvFlXSQOSOSIRvRPT7W67SCa46tRHOmNcaadrF8o=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
