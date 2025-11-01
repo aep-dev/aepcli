@@ -1,10 +1,10 @@
 module github.com/aep-dev/aepcli
 
-go 1.22.3
+go 1.23
 
 require (
 	github.com/BurntSushi/toml v1.4.0
-	github.com/aep-dev/aep-lib-go v0.0.0-20250514123412-03de496bdecf
+	github.com/aep-dev/aep-lib-go v0.0.0-20251011190527-4b8a96d91310
 	github.com/spf13/cobra v1.8.1
 	github.com/stretchr/testify v1.9.0
 )

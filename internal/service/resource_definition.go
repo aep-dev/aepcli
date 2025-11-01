@@ -23,7 +23,11 @@ func ExecuteResourceCommand(r *api.Resource, args []string) (*http.Request, stri
 	patternElems := r.PatternElems()
 	for i < len(patternElems)-1 {
 		p := patternElems[i]
-		flagName := p[1 : len(p)-1]
+		flagName := p[1 : len(p)-1] // extract content between braces
+		// Strip "_id" suffix if present to make flag names cleaner
+		if strings.HasSuffix(flagName, "_id") {
+			flagName = strings.TrimSuffix(flagName, "_id")
+		}
 		var flagValue string
 		parents = append(parents, &flagValue)
 		c.PersistentFlags().StringVar(&flagValue, flagName, "", fmt.Sprintf("The %v of the resource", flagName))
