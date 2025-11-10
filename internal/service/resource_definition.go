@@ -60,6 +60,9 @@ func ExecuteResourceCommand(r *api.Resource, args []string) (*http.Request, stri
 			args = cobra.ExactArgs(0)
 		}
 		createArgs := map[string]interface{}{}
+		var dataContent map[string]interface{}
+		createArgs["data"] = &dataContent
+
 		createCmd := &cobra.Command{
 			Use:   use,
 			Short: fmt.Sprintf("Create a %v", strings.ToLower(r.Singular)),
@@ -72,7 +75,7 @@ func ExecuteResourceCommand(r *api.Resource, args []string) (*http.Request, stri
 				}
 				jsonBody, err := generateJsonPayload(cmd, createArgs)
 				if err != nil {
-					slog.Error(fmt.Sprintf("unable to create json body for update: %v", err))
+					slog.Error(fmt.Sprintf("unable to create json body for create: %v", err))
 				}
 				req, err = http.NewRequest("POST", p, strings.NewReader(string(jsonBody)))
 				if err != nil {
@@ -80,6 +83,9 @@ func ExecuteResourceCommand(r *api.Resource, args []string) (*http.Request, stri
 				}
 			},
 		}
+
+		createCmd.Flags().Var(&DataFlag{&dataContent}, "@data", "Read resource data from JSON file")
+
 		addSchemaFlags(createCmd, *r.Schema, createArgs)
 		c.AddCommand(createCmd)
 	}
@@ -101,6 +107,9 @@ func ExecuteResourceCommand(r *api.Resource, args []string) (*http.Request, stri
 	if r.Methods.Update != nil {
 
 		updateArgs := map[string]interface{}{}
+		var updateDataContent map[string]interface{}
+		updateArgs["data"] = &updateDataContent
+
 		updateCmd := &cobra.Command{
 			Use:   "update [id]",
 			Short: fmt.Sprintf("Update a %v", strings.ToLower(r.Singular)),
@@ -118,6 +127,9 @@ func ExecuteResourceCommand(r *api.Resource, args []string) (*http.Request, stri
 				}
 			},
 		}
+
+		updateCmd.Flags().Var(&DataFlag{&updateDataContent}, "@data", "Read resource data from JSON file")
+
 		addSchemaFlags(updateCmd, *r.Schema, updateArgs)
 		c.AddCommand(updateCmd)
 	}
@@ -151,6 +163,8 @@ func ExecuteResourceCommand(r *api.Resource, args []string) (*http.Request, stri
 	}
 	for _, cm := range r.CustomMethods {
 		customArgs := map[string]interface{}{}
+		var customDataContent map[string]interface{}
+
 		customCmd := &cobra.Command{
 			Use:   fmt.Sprintf(":%s [id]", cm.Name),
 			Short: fmt.Sprintf("%v a %v", cm.Method, strings.ToLower(r.Singular)),
@@ -161,7 +175,7 @@ func ExecuteResourceCommand(r *api.Resource, args []string) (*http.Request, stri
 				if cm.Method == "POST" {
 					jsonBody, inner_err := generateJsonPayload(cmd, customArgs)
 					if inner_err != nil {
-						slog.Error(fmt.Sprintf("unable to create json body for update: %v", inner_err))
+						slog.Error(fmt.Sprintf("unable to create json body for custom method: %v", inner_err))
 					}
 					req, err = http.NewRequest(cm.Method, p, strings.NewReader(string(jsonBody)))
 				} else {
@@ -169,7 +183,10 @@ func ExecuteResourceCommand(r *api.Resource, args []string) (*http.Request, stri
 				}
 			},
 		}
+
 		if cm.Method == "POST" {
+			customArgs["data"] = &customDataContent
+			customCmd.Flags().Var(&DataFlag{&customDataContent}, "@data", "Read resource data from JSON file")
 			addSchemaFlags(customCmd, *cm.Request, customArgs)
 		}
 		c.AddCommand(customCmd)
@@ -229,8 +246,45 @@ func addSchemaFlags(c *cobra.Command, schema openapi.Schema, args map[string]int
 }
 
 func generateJsonPayload(c *cobra.Command, args map[string]interface{}) (string, error) {
+	// Check if --@data flag was used
+	dataFlag := c.Flags().Lookup("@data")
+	if dataFlag != nil && dataFlag.Changed {
+		// Check for conflicts with other flags
+		var conflictingFlags []string
+		for key := range args {
+			if key == "data" {
+				continue // Skip the internal data key
+			}
+			if flag := c.Flags().Lookup(key); flag != nil && flag.Changed {
+				conflictingFlags = append(conflictingFlags, "--"+key)
+			}
+		}
+
+		if len(conflictingFlags) > 0 {
+			return "", fmt.Errorf("--@data flag cannot be used with individual field flags (%s)", strings.Join(conflictingFlags, ", "))
+		}
+
+		// Get the data from the --@data flag
+		if dataValue, ok := args["data"]; ok {
+			if dataMap, ok := dataValue.(*map[string]interface{}); ok && *dataMap != nil {
+				jsonBody, err := json.Marshal(*dataMap)
+				if err != nil {
+					return "", fmt.Errorf("error marshalling JSON from --@data: %v", err)
+				}
+				return string(jsonBody), nil
+			}
+		}
+
+		// If --@data flag was used but no data was set, return empty object
+		return "{}", nil
+	}
+
+	// Original logic for individual flags
 	body := map[string]interface{}{}
 	for key, value := range args {
+		if key == "data" {
+			continue // Skip the data field when building from individual flags
+		}
 		if c.Flags().Lookup(key).Changed {
 			body[key] = value
 		}

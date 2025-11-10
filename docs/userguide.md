@@ -178,6 +178,55 @@ lists are specified as a comma-separated list:
 aepcli bookstore book-edition create --book "peter-pan" --publisher "consistent-house" --tags "fantasy,childrens"
 ```
 
+### JSON File Input with --@data Flag
+
+For complex resource data or when working with arrays of objects, you can use the `--@data` flag to read resource data from JSON files.
+
+#### Basic Usage
+
+Create a JSON file containing the resource data:
+
+```json
+{
+  "title": "The Lord of the Rings",
+  "author": "J.R.R. Tolkien",
+  "published": 1954,
+  "metadata": {
+    "isbn": "978-0-618-00222-1",
+    "pages": 1178,
+    "publisher": {
+      "name": "Houghton Mifflin",
+      "location": "Boston"
+    }
+  },
+  "genres": ["fantasy", "adventure", "epic"],
+  "available": true
+}
+```
+
+Then use the flag to reference the file:
+
+```bash
+aepcli bookstore book create lotr --@data book.json
+```
+
+#### File Reference Syntax
+
+- Relative paths are resolved from the current working directory
+- Absolute paths are also supported
+
+```bash
+# Using relative path
+aepcli bookstore book create --@data ./data/book.json
+
+# Using absolute path
+aepcli bookstore book create --@data /home/user/books/fantasy.json
+```
+
+#### Mutually Exclusive with Field Flags
+
+The `--@data` flag cannot be used together with individual field flags. This prevents confusion about which values should be used.
+
 ### Logging HTTP requests and Dry Runs
 
 aepcli supports logging http requests and dry runs. To log http requests, use the
