@@ -2,6 +2,7 @@ package service
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -15,20 +16,31 @@ import (
 )
 
 type ServiceCommand struct {
-	API     api.API
-	Headers map[string]string
-	DryRun  bool
-	LogHTTP bool
-	Client  *http.Client
+	API      api.API
+	Headers  map[string]string
+	DryRun   bool
+	LogHTTP  bool
+	Insecure bool
+	Client   *http.Client
 }
 
-func NewServiceCommand(api *api.API, headers map[string]string, dryRun bool, logHTTP bool) *ServiceCommand {
+func NewServiceCommand(api *api.API, headers map[string]string, dryRun bool, logHTTP bool, insecure bool) *ServiceCommand {
+	client := &http.Client{}
+	
+	if insecure {
+		tr := &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		}
+		client.Transport = tr
+	}
+	
 	return &ServiceCommand{
-		API:     *api,
-		Headers: headers,
-		DryRun:  dryRun,
-		LogHTTP: logHTTP,
-		Client:  &http.Client{},
+		API:      *api,
+		Headers:  headers,
+		DryRun:   dryRun,
+		LogHTTP:  logHTTP,
+		Insecure: insecure,
+		Client:   client,
 	}
 }
 
