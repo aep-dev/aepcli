@@ -33,6 +33,7 @@ func main() {
 func aepcli(args []string) (int, error) {
 	var dryRun bool
 	var logHTTP bool
+	var insecure bool
 	var logLevel string
 	var fileAliasOrCore string
 	var additionalArgs []string
@@ -63,6 +64,7 @@ func aepcli(args []string) (int, error) {
 	rootCmd.PersistentFlags().StringVar(&logLevel, "log-level", "info", "Set the logging level (debug, info, warn, error)")
 	rootCmd.PersistentFlags().BoolVar(&logHTTP, "log-http", false, "Set to true to log HTTP requests. This can be helpful when attempting to write your own code or debug.")
 	rootCmd.PersistentFlags().BoolVar(&dryRun, "dry-run", false, "Set to true to not make any changes. This can be helpful when paired with log-http to just view http requests instead of perform them.")
+	rootCmd.PersistentFlags().BoolVar(&insecure, "insecure", false, "Set to true to skip TLS certificate verification. Use with caution.")
 	rootCmd.PersistentFlags().StringVar(&pathPrefix, "path-prefix", "", "Specify a path prefix that is prepended to all paths in the openapi schema. This will strip them when evaluating the resource hierarchy paths.")
 	rootCmd.PersistentFlags().StringVar(&serverURL, "server-url", "", "Specify a URL to use for the server. If not specified, the first server URL in the OpenAPI definition will be used.")
 	rootCmd.PersistentFlags().StringVar(&configFileVar, "config", "", "Path to config file")
@@ -119,7 +121,7 @@ func aepcli(args []string) (int, error) {
 		return CODE_ERR, fmt.Errorf("unable to parse headers: %w", err)
 	}
 
-	s = service.NewServiceCommand(api, headersMap, dryRun, logHTTP)
+	s = service.NewServiceCommand(api, headersMap, dryRun, logHTTP, insecure)
 
 	result, err := s.Execute(additionalArgs)
 	returnCode := CODE_OK
