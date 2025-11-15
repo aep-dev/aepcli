@@ -16,32 +16,50 @@ import (
 )
 
 type ServiceCommand struct {
-	API      api.API
-	Headers  map[string]string
-	DryRun   bool
-	LogHTTP  bool
-	Insecure bool
-	Client   *http.Client
+	API        api.API
+	Headers    map[string]string
+	DryRun     bool
+	LogHTTP    bool
+	Insecure   bool
+	CACertPath string
+	Client     *http.Client
 }
 
-func NewServiceCommand(api *api.API, headers map[string]string, dryRun bool, logHTTP bool, insecure bool) *ServiceCommand {
+func NewServiceCommand(api *api.API, headers map[string]string, dryRun bool, logHTTP bool, insecure bool, caCertPath string) (*ServiceCommand, error) {
 	client := &http.Client{}
-	
+
 	if insecure {
+		slog.Debug("Loading TLS configuration")
+		slog.Debug("TLS certificate verification disabled (insecure mode)")
 		tr := &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		}
 		client.Transport = tr
+	} else if caCertPath != "" {
+		slog.Debug("Loading TLS configuration")
+		// Load custom CA certificate
+		caCertPool, err := loadCACertificate(caCertPath)
+		if err != nil {
+			return nil, err
+		}
+		tr := &http.Transport{
+			TLSClientConfig: &tls.Config{RootCAs: caCertPool},
+		}
+		client.Transport = tr
+	} else {
+		// Use default system CA certificates
+		slog.Debug("Using system CA certificates")
 	}
-	
+
 	return &ServiceCommand{
-		API:      *api,
-		Headers:  headers,
-		DryRun:   dryRun,
-		LogHTTP:  logHTTP,
-		Insecure: insecure,
-		Client:   client,
-	}
+		API:        *api,
+		Headers:    headers,
+		DryRun:     dryRun,
+		LogHTTP:    logHTTP,
+		Insecure:   insecure,
+		CACertPath: caCertPath,
+		Client:     client,
+	}, nil
 }
 
 func (s *ServiceCommand) Execute(args []string) (*Result, error) {

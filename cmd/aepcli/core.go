@@ -94,6 +94,7 @@ func configCmd(configFile string) *cobra.Command {
 	var serverURL string
 	var headers []string
 	var pathPrefix string
+	var caCertPath string
 
 	configCmd := &cobra.Command{
 		Use:   "config",
@@ -111,6 +112,7 @@ func configCmd(configFile string) *cobra.Command {
 				ServerURL:   serverURL,
 				Headers:     headers,
 				PathPrefix:  pathPrefix,
+				CACertPath:  caCertPath,
 			}
 			if err := config.WriteAPIWithName(configFile, api, overwrite); err != nil {
 				fmt.Printf("Error writing API config: %v\n", err)
@@ -124,6 +126,7 @@ func configCmd(configFile string) *cobra.Command {
 	addCmd.Flags().StringArrayVar(&headers, "header", []string{}, "Headers in format key=value")
 	addCmd.Flags().StringVar(&serverURL, "server-url", "", "Server URL")
 	addCmd.Flags().StringVar(&pathPrefix, "path-prefix", "", "Path prefix")
+	addCmd.Flags().StringVar(&caCertPath, "ca-cert", "", "Path to custom CA certificate file (PEM format)")
 	addCmd.Flags().BoolVar(&overwrite, "overwrite", false, "Overwrite existing configuration")
 
 	readCmd := &cobra.Command{
@@ -148,6 +151,7 @@ func configCmd(configFile string) *cobra.Command {
 			fmt.Printf("Server URL: %s\n", api.ServerURL)
 			fmt.Printf("Headers: %v\n", api.Headers)
 			fmt.Printf("Path Prefix: %s\n", api.PathPrefix)
+			fmt.Printf("CA Certificate Path: %s\n", api.CACertPath)
 		},
 	}
 
@@ -173,6 +177,7 @@ func configCmd(configFile string) *cobra.Command {
 				fmt.Printf("Server URL: %s\n", api.ServerURL)
 				fmt.Printf("Headers: %v\n", api.Headers)
 				fmt.Printf("Path Prefix: %s\n", api.PathPrefix)
+				fmt.Printf("CA Certificate Path: %s\n", api.CACertPath)
 				fmt.Println()
 			}
 		},

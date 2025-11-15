@@ -20,6 +20,7 @@ type API struct {
 	ServerURL   string
 	Headers     []string
 	PathPrefix  string
+	CACertPath  string
 }
 
 func ReadConfigFromFile(file string) (*Config, error) {

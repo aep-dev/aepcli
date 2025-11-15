@@ -8,7 +8,10 @@ import (
 
 func TestService_ExecuteCommand_ListResources(t *testing.T) {
 	// Test setup
-	svc := NewServiceCommand(getTestAPI(), nil, false, false, false)
+	svc, err := NewServiceCommand(getTestAPI(), nil, false, false, false, "")
+	if err != nil {
+		t.Fatalf("Failed to create service command: %v", err)
+	}
 
 	tests := []struct {
 		name          string
@@ -77,7 +80,10 @@ func TestNewServiceCommand_Insecure(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			svc := NewServiceCommand(getTestAPI(), nil, false, false, tt.insecure)
+			svc, err := NewServiceCommand(getTestAPI(), nil, false, false, tt.insecure, "")
+			if err != nil {
+				t.Fatalf("Failed to create service command: %v", err)
+			}
 
 			if svc.Insecure != tt.insecure {
 				t.Errorf("NewServiceCommand() insecure = %v, want %v", svc.Insecure, tt.insecure)

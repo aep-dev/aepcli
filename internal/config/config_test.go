@@ -25,6 +25,7 @@ func TestConfigEndToEnd(t *testing.T) {
 		ServerURL:   "https://api.example.com",
 		Headers:     []string{"Authorization=Bearer token"},
 		PathPrefix:  "/v1",
+		CACertPath:  "/path/to/ca.pem",
 	}
 
 	// Write API config to file
@@ -54,6 +55,7 @@ func TestWriteAPIWithEmptyName(t *testing.T) {
 		ServerURL:   "https://api.example.com",
 		Headers:     []string{"Authorization=Bearer token"},
 		PathPrefix:  "/v1",
+		CACertPath:  "/path/to/ca.pem",
 	}
 
 	err := WriteAPIWithName(testFile, testAPI, false)
