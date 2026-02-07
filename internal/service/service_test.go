@@ -22,12 +22,12 @@ func TestService_ExecuteCommand_ListResources(t *testing.T) {
 		{
 			name:     "no arguments",
 			args:     []string{},
-			expected: "Available resources:\n  - comment\n  - dataset\n  - project\n  - user\n",
+			expected: "Available resources:\n  - book\n  - comment\n  - dataset\n  - project\n  - shelf\n  - user\n",
 		},
 		{
 			name:     "help flag",
 			args:     []string{"--help"},
-			expected: "Available resources:\n  - comment\n  - dataset\n  - project\n  - user\n",
+			expected: "Available resources:\n  - book\n  - comment\n  - dataset\n  - project\n  - shelf\n  - user\n",
 		},
 		{
 			name:          "unknown resource",

@@ -202,6 +202,10 @@ func ExecuteResourceCommand(r *api.Resource, args []string) (*http.Request, stri
 
 func addSchemaFlags(c *cobra.Command, schema openapi.Schema, args map[string]interface{}) error {
 	for name, prop := range schema.Properties {
+		description := prop.Description
+		if description == "" {
+			description = fmt.Sprintf("The %v of the resource", name)
+		}
 		if prop.ReadOnly {
 			continue
 		}
@@ -209,34 +213,34 @@ func addSchemaFlags(c *cobra.Command, schema openapi.Schema, args map[string]int
 		case "string":
 			var value string
 			args[name] = &value
-			c.Flags().StringVar(&value, name, "", fmt.Sprintf("The %v of the resource", name))
+			c.Flags().StringVar(&value, name, "", description)
 		case "integer":
 			var value int
 			args[name] = &value
-			c.Flags().IntVar(&value, name, 0, fmt.Sprintf("The %v of the resource", name))
+			c.Flags().IntVar(&value, name, 0, description)
 		case "number":
 			var value float64
 			args[name] = &value
-			c.Flags().Float64Var(&value, name, 0, fmt.Sprintf("The %v of the resource", name))
+			c.Flags().Float64Var(&value, name, 0, description)
 		case "boolean":
 			var value bool
 			args[name] = &value
-			c.Flags().BoolVar(&value, name, false, fmt.Sprintf("The %v of the resource", name))
+			c.Flags().BoolVar(&value, name, false, description)
 		case "array":
 			if prop.Items == nil {
 				return fmt.Errorf("items is required for array type, not found for field %v", name)
 			}
 			var value []interface{}
 			args[name] = &value
-			c.Flags().Var(&ArrayFlag{&value, prop.Items.Type}, name, fmt.Sprintf("The %v of the resource", name))
+			c.Flags().Var(&ArrayFlag{&value, prop.Items.Type}, name, description)
 		case "object":
 			var parsedValue map[string]interface{}
 			args[name] = &parsedValue
-			c.Flags().Var(&JSONFlag{&parsedValue}, name, fmt.Sprintf("The %v of the resource", name))
+			c.Flags().Var(&JSONFlag{&parsedValue}, name, description)
 		default:
 			var parsedValue map[string]interface{}
 			args[name] = &parsedValue
-			c.Flags().Var(&JSONFlag{&parsedValue}, name, fmt.Sprintf("The %v of the resource", name))
+			c.Flags().Var(&JSONFlag{&parsedValue}, name, description)
 		}
 	}
 	for _, f := range schema.Required {
