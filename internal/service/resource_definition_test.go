@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/aep-dev/aep-lib-go/pkg/api"
@@ -19,7 +20,8 @@ func getTestAPI() *api.API {
 		Schema: &openapi.Schema{
 			Properties: map[string]openapi.Schema{
 				"name": {
-					Type: "string",
+					Type:        "string",
+					Description: "The name of the project",
 				},
 				"description": {
 					Type: "string",
@@ -118,11 +120,48 @@ func getTestAPI() *api.API {
 				Parents:  []string{},
 				Schema:   &openapi.Schema{},
 			},
+			"shelf": {
+				Singular: "shelf",
+				Plural:   "shelves",
+				Parents:  []string{"project"},
+				Schema:   &openapi.Schema{},
+			},
+			"book": {
+				Singular: "book",
+				Plural:   "books",
+				Parents:  []string{"shelf"},
+				Schema: &openapi.Schema{
+					Properties: map[string]openapi.Schema{
+						"title": {
+							Type: "string",
+						},
+						"author": {
+							Type: "string",
+						},
+						"path": {
+							Type:     "string",
+							ReadOnly: true,
+						},
+					},
+				},
+				Methods: api.Methods{
+					Create: &api.CreateMethod{
+						SupportsUserSettableCreate: true,
+					},
+				},
+			},
 		},
 	}
 	err := api.AddImplicitFieldsAndValidate(a)
 	if err != nil {
 		panic(err)
+	}
+	// Restore ReadOnly for book path, as AddImplicitFieldsAndValidate overwrites it
+	if book, ok := a.Resources["book"]; ok {
+		if pathProp, ok := book.Schema.Properties["path"]; ok {
+			pathProp.ReadOnly = true
+			book.Schema.Properties["path"] = pathProp
+		}
 	}
 	return a
 }
@@ -135,8 +174,10 @@ func TestExecuteCommand(t *testing.T) {
 		expectedQuery  string
 		expectedPath   string
 		expectedMethod string
+
 		wantErr        bool
 		body           string
+		expectedOutput string
 	}{
 		{
 			name:           "simple resource no parents",
@@ -240,20 +281,43 @@ func TestExecuteCommand(t *testing.T) {
 			wantErr:        false,
 			body:           `{"description":"Manual dataset","name":"manual-dataset"}`,
 		},
+		{
+			name:           "create book with read-only path flag",
+			resource:       "book",
+			args:           []string{"--project=myproject", "--shelf=myshelf", "create", "mybook", "--path=some/path"},
+			expectedPath:   "",
+			expectedMethod: "",
+			wantErr:        true,
+			body:           "",
+		},
+		{
+			name:           "help with description",
+			resource:       "project",
+			args:           []string{"create", "--help"},
+			expectedPath:   "",
+			expectedMethod: "",
+			wantErr:        false,
+			expectedOutput: "The name of the project",
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			a := getTestAPI()
-			req, _, err := ExecuteResourceCommand(a.Resources[tt.resource], tt.args)
+			req, output, err := ExecuteResourceCommand(a.Resources[tt.resource], tt.args)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ExecuteCommand() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !tt.wantErr && req == nil {
+			if !tt.wantErr && req == nil && tt.expectedOutput == "" {
 				t.Error("ExecuteCommand() returned nil request when no error expected")
 			}
-			if !tt.wantErr {
+			if tt.expectedOutput != "" {
+				if !strings.Contains(output, tt.expectedOutput) {
+					t.Errorf("ExecuteCommand() output = %q, want to contain %q", output, tt.expectedOutput)
+				}
+			}
+			if !tt.wantErr && req != nil {
 				// Verify the request path matches expected pattern
 				if req.URL.Path != tt.expectedPath {
 					t.Errorf("ExecuteCommand() request path = %v, want %v", req.URL.Path, tt.expectedPath)
