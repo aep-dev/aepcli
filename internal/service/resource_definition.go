@@ -206,6 +206,19 @@ func addSchemaFlags(c *cobra.Command, schema openapi.Schema, args map[string]int
 		if description == "" {
 			description = fmt.Sprintf("The %v of the resource", name)
 		}
+
+		// Check if the field is required
+		isRequired := false
+		for _, required := range schema.Required {
+			if required == name {
+				isRequired = true
+				break
+			}
+		}
+		if isRequired {
+			description = fmt.Sprintf("%s (required)", description)
+		}
+
 		if prop.ReadOnly {
 			continue
 		}
