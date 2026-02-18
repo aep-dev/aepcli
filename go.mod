@@ -4,7 +4,7 @@ go 1.23
 
 require (
 	github.com/BurntSushi/toml v1.4.0
-	github.com/aep-dev/aep-lib-go v0.0.0-20260131195318-c3b64c3a27e8
+	github.com/aep-dev/aep-lib-go v0.0.0-20260218063107-bb4d0cbad616
 	github.com/spf13/cobra v1.8.1
 	github.com/stretchr/testify v1.9.0
 )
